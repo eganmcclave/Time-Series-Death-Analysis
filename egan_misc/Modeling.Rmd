@@ -24,28 +24,41 @@ opts_chunk$set(cache=T, autodep=T, cache.comments=F)
 
 ```{r}
 # Time series regression model
-attach(as.data.frame(ts_vars))
-temp = Temperature - mean(Temperature)
-temp2 = temp^2
-trend = time(temp)
-
-fit1 = lm(`Num Deaths` ~ trend + temp + temp2 + Ozone + `Relative Humidity`, na.action=NULL)
-plot(resid(fit1)); abline(h=0, col='red', lwd=2)
-qqnorm(resid(fit1)); qqline(resid(fit1))
-invisible(acf2(resid(fit1), 365))
-
-fit2 = 
-  arima(`Num Deaths`, order = c(4,0,14), xreg = cbind(trend, temp, temp2, Ozone, `Relative Humidity`))
-  #sarima(ts_vars[,'Num Deaths'], p=1, d=0, q=1, xreg = cbind(trend, temp, temp2, `Ozone, `Relative Humidity`))
-plot(resid(fit2), type='l'); abline(h=0, col='red', lwd=2)
-qqnorm(resid(fit2)); qqline(resid(fit2))
-invisible(acf2(resid(fit2), 365))
-
-fit3 = auto.arima(`Num Deaths`, xreg=cbind(trend, temp, temp2, Ozone, `Relative Humidity`),
-                  seasonal=T, stepwise=F, approximation=F)
-plot(resid(fit3)); abline(h=0, col='red', lwd=2)
-qqnorm(resid(fit3)); qqline(resid(fit3))
-invisible(acf2(resid(fit3), 365))
+ts_reg <- function(train, test) {
+  
+  # Training portion
+  attach(as.data.frame(train))
+  temp = train[,'Temperature'] - mean(train[,'Temperature'])
+  temp2 = temp^2
+  trend = time(temp)
+  
+  fit1 = lm(`Num Deaths` ~ trend + temp + temp2 + train[,'Ozone'] + train[,'Relative Humidity'])
+  plot(resid(fit1)); abline(h=0, col='red', lwd=2)
+  qqnorm(resid(fit1)); qqline(resid(fit1))
+  invisible(acf2(resid(fit1), 365))
+  
+  fit2 = arima(`Num Deaths`, order=c(4, 0, 14), 
+    xreg=cbind(trend, temp, temp2, Ozone=train[,'Ozone'], `Relative Humidity`=train[,'Relative Humidity']))
+    #sarima(ts_vars[,'Num Deaths'], p=1, d=0, q=1, xreg = cbind(trend, temp, temp2, `Ozone, `Relative Humidity`))
+  plot(resid(fit2), type='l'); abline(h=0, col='red', lwd=2)
+  qqnorm(resid(fit2)); qqline(resid(fit2))
+  invisible(acf2(resid(fit2), 365))
+  
+  fit3 = auto.arima(`Num Deaths`, 
+    xreg=cbind(trend, temp, temp2, Ozone=train[,'Ozone'], `Relative Humidity`=train[,'Relative Humidity']),
+    seasonal=T, stepwise=F, approximation=F)
+  plot(resid(fit3)); abline(h=0, col='red', lwd=2)
+  qqnorm(resid(fit3)); qqline(resid(fit3))
+  invisible(acf2(resid(fit3), 365))
+  detach(as.data.frame(train))
+  
+  # Testing portion
+  attach(as.data.frame(test))
+  
+  
+  
+  detach(as.data.frame(test))
+}
 
 plot(`Temperature`, `Num Deaths`)
 xvals = seq(min(`Temperature`), max(`Temperature`) + 1)
@@ -73,7 +86,7 @@ lines(xvals,
         coef(fit3)['Ozone'] * mean(Ozone) + 
         coef(fit3)['Relative Humidity'] * mean(`Relative Humidity`), 
       col = "green", lwd=2)
-detach(as.data.frame(ts_vars))
+#detach(as.data.frame(ts_vars))
 ```
 
 ```{r}

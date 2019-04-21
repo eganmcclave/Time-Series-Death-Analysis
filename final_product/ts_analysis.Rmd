@@ -1,30 +1,420 @@
 ---
 title: "Time Series Analysis"
-author: "Aijin Wang"
+author: ""
 date: "4/21/2019"
 output: pdf_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+<!-- Preliminary Set-up -->
+
+```{r prelim, include=FALSE}
+# Load packages
+pkgs <- c('xtable', 'astsa', 'vars', 'MTS', 'foreign', 'knitr', 'lubridate')
+lapply(pkgs, library, character.only=T)
+
+# Load data
+### Custom color palette
+cols <- c('#000000', '#999999', '#E69F00', '#56B4E9', '#009E73',
+          '#FF0000', '#F0E442', '#0072B2', '#D55E00', '#CC79A7')
+
+### Dataset
+df <- read.dta('../data/ije-2012-10-0989-File003.dta')
+colnames(df) <- c('Date', 'Ozone', 'Temperature', 'Relative Humidity', 'Num Deaths')
+
+# Combine the series into a ts object with appropriate time series labeling
+ts_vars <- ts(with(df, cbind(Ozone, Temperature, `Relative Humidity`, `Num Deaths`)),
+              start=c(2002, 1), frequency=365)
+
+# Formulate training/testing splits where testing is 1 year or 6 months
+train_1 <- window(ts_vars, start=c(2002, 1), end=c(2005, 365))
+test_1 <- window(ts_vars, start=c(2006, 1), end=c(2007, 1))
+
+train_2 <- window(ts_vars, start=c(2002, 1), end=c(2006, 365/2))
+test_2 <- window(ts_vars, start=c(2006, 365/2), end=c(2007, 1))
+
+# Cache chunk options
+opts_chunk$set(cache=T, autodep=T, cache.comments=F)
 ```
 
-## R Markdown
+<!-- Set-up Function -->
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r custom functions}
+### New plot.ts
+temp_plot <- function (x, y = NULL, plot.type = c("multiple", "single"), xy.labels, xy.lines, panel = lines, nc, yax.flip = FALSE, 
+    mar.multi = c(0, 5.1, 0, if (yax.flip) 5.1 else 2.1), oma.multi = c(6, 0, 5, 0), axes = TRUE, other=NULL, other_col='red', other_lwd=2, ...) {
+  
+    plotts <- function(x, y = NULL, plot.type = c("multiple", "single"), xy.labels, xy.lines, panel = lines, nc, xlabel, 
+        ylabel, type = "l", xlim = NULL, ylim = NULL, xlab = "Time", ylab, log = "", col = par("col"), bg = NA, pch = par("pch"), 
+        cex = par("cex"), lty = par("lty"), lwd = par("lwd"), axes = TRUE, frame.plot = axes, ann = par("ann"), cex.lab = par("cex.lab"), 
+        col.lab = par("col.lab"), font.lab = par("font.lab"), cex.axis = par("cex.axis"), col.axis = par("col.axis"), 
+        font.axis = par("font.axis"), main = NULL, other=NULL, other_col='red', other_lwd=2, ...) {
+      
+        plot.type <- match.arg(plot.type)
+        nser <- NCOL(x)
+        
+        if (plot.type == "multiple" && nser > 1) {
+            addmain <- function(main, cex.main = par("cex.main"), font.main = par("font.main"), col.main = par("col.main"), ...)
+            mtext(main, side = 3, line = 3, cex = cex.main, font = font.main, col = col.main, ...)
+            panel <- match.fun(panel)
+            nser <- NCOL(x)
+            if (nser > 10) stop("cannot plot more than 10 series as \"multiple\"")
+            if (is.null(main)) main <- xlabel
+            nm <- colnames(x)
+            if (is.null(nm))  nm <- paste("Series", 1L:nser)
+            if (missing(nc)) 
+                nc <- if (nser > 4) 2
+                else 1
+            
+            nr <- ceiling(nser/nc)
+            oldpar <- par(mar = mar.multi, oma = oma.multi, mfcol = c(nr, nc))
+            on.exit(par(oldpar))
+            
+            for (i in 1L:nser) {
+                plot.default(x[, i], axes = FALSE, xlab = "", ylab = "", log = log,
+                    col = col, bg = bg, pch = pch, ann = ann, type = "n", ...)
+                panel(x[, i], col = col, bg = bg, pch = pch, cex = cex, lwd = lwd,
+                    lty = lty, type = type, ...)
+                
+                # EDITED CODE
+                if (!is.null(other))
+                  lines(other[, i], col=other_col, lwd=2)
+                
+                if (frame.plot) box(...)
+                
+                y.side <- if (i%%2 || !yax.flip) 2
+                else 4
+                do.xax <- i%%nr == 0 || i == nser
+                if (axes) {
+                  axis(y.side, xpd = NA, cex.axis = cex.axis, 
+                    col.axis = col.axis, font.axis = font.axis, 
+                    ...)
+                  if (do.xax) 
+                    axis(1, xpd = NA, cex.axis = cex.axis, col.axis = col.axis, 
+                      font.axis = font.axis, ...)
+                }
+                if (ann) {
+                  mtext(nm[i], y.side, line = 3, cex = cex.lab, 
+                    col = col.lab, font = font.lab, ...)
+                  if (do.xax) 
+                    mtext(xlab, side = 1, line = 3, cex = cex.lab, 
+                      col = col.lab, font = font.lab, ...)
+                }
+            }
+            if (ann && !is.null(main)) {
+                par(mfcol = c(1, 1))
+                addmain(main, ...)
+            }
+            return(invisible())
+        }
+        x <- as.ts(x)
+        if (!is.null(y)) {
+            y <- hasTsp(y)
+            if (NCOL(x) > 1 || NCOL(y) > 1) stop("scatter plots only for univariate time series")
+            if (is.ts(x) && is.ts(y)) {
+                xy <- ts.intersect(x, y)
+                xy <- xy.coords(xy[, 1], xy[, 2], xlabel, ylabel, log)
+            }
+            else xy <- xy.coords(x, y, xlabel, ylabel, log)
+            
+            xlab <- if (missing(xlab)) xy$xlab
+            else xlab
+            
+            ylab <- if (missing(ylab)) xy$ylab
+            else ylab
+            
+            xlim <- if (is.null(xlim)) range(xy$x[is.finite(xy$x)])
+            else xlim
+            
+            ylim <- if (is.null(ylim)) range(xy$y[is.finite(xy$y)])
+            else ylim
+            
+            n <- length(xy$x)
+            if (missing(xy.labels)) xy.labels <- (n <= 150)
+            do.lab <- if (is.logical(xy.labels)) xy.labels
+            else {
+                if (!is.character(xy.labels)) stop("'xy.labels' must be logical or character")
+                TRUE
+            }
+            ptype <- if (do.lab) "n"
+            else if (missing(type)) "p"
+            else type
+            
+            dev.hold()
+            on.exit(dev.flush())
+            plot.default(xy, type = ptype, xlab = xlab, ylab = ylab, xlim = xlim, ylim = ylim, log = log, col = col, 
+                bg = bg, pch = pch, cex = cex, lty = lty, lwd = lwd, axes = axes, frame.plot = frame.plot, ann = ann, main = main, ...)
+            
+            if (missing(xy.lines)) xy.lines <- do.lab
+            if (do.lab) 
+                text(xy, labels = if (is.character(xy.labels)) 
+                  xy.labels
+                else if (all(tsp(x) == tsp(y))) 
+                  formatC(unclass(time(x)), width = 1)
+                else seq_along(xy$x), col = col, cex = cex)
+            
+            if (xy.lines) 
+                lines(xy, col = col, lty = lty, lwd = lwd, 
+                      type = if (do.lab) 
+                  "c"
+                else "l")
+            
+            return(invisible())
+        }
+        if (missing(ylab)) {
+            ylab <- colnames(x)
+            if (length(ylab) != 1L) ylab <- xlabel
+        }
+        
+        if (is.matrix(x)) {
+            k <- ncol(x)
+            tx <- time(x)
+            xy <- xy.coords(x = matrix(rep.int(tx, k), ncol = k), y = x, log = log, setLab = FALSE)
+            xy$x <- tx
+        }
+        else xy <- xy.coords(x, NULL, log = log, setLab = FALSE)
+        if (is.null(xlim)) xlim <- range(xy$x)
+        if (is.null(ylim)) ylim <- range(xy$y[is.finite(xy$y)])
+        plot.new()
+        plot.window(xlim, ylim, log, ...)
+        if (is.matrix(x)) {
+            for (i in seq_len(k)) lines.default(xy$x, x[, i], 
+                col = col[(i - 1L)%%length(col) + 1L], lty = lty[(i - 1L)%%length(lty) + 1L], 
+                lwd = lwd[(i - 1L)%%length(lwd) + 1L], bg = bg[(i - 1L)%%length(bg) + 1L],
+                pch = pch[(i - 1L)%%length(pch) + 1L], cex = cex[(i - 1L)%%length(cex) + 1L], type = type)
+        }
+        else {
+            lines.default(xy$x, x, col = col[1L], bg = bg, lty = lty[1L], 
+                lwd = lwd[1L], pch = pch[1L], cex = cex[1L], 
+                type = type)
+        }
+        if (ann) 
+            title(main = main, xlab = xlab, ylab = ylab, ...)
+        if (axes) {
+            axis(1, ...)
+            axis(2, ...)
+        }
+        if (frame.plot) 
+            box(...)
+    }
+    
+    xlabel <- if (!missing(x)) deparse(substitute(x))
+    ylabel <- if (!missing(y)) deparse(substitute(y))
+    
+    plotts(x = x, y = y, plot.type = plot.type, xy.labels = xy.labels, 
+        xy.lines = xy.lines, panel = panel, nc = nc, xlabel = xlabel, 
+        ylabel = ylabel, axes = axes, other=other, other_col=other_col, other_lwd=other_lwd, ...)
+}
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+### Old acf
+old_acf <- stats:::plot.acf
 
-```{r cars}
-summary(cars)
+### New acf
+plot.acf <- function (x, ci = 0.95, type = "h", xlab = "Lag", ylab = NULL, ylim = NULL, main = NULL, ci.col = "blue", 
+    ci.type = c("white", "ma"), max.mfrow = 6, ask = Npgs > 1 && dev.interactive(), 
+    mar = if (nser > 2) c(3, 2, 2, 0.8) 
+          else par("mar"), 
+    oma = if (nser > 2) c(1, 1.2, 1, 1) 
+          else par("oma"), 
+    mgp = if (nser > 2) c(1.5, 0.6, 0) 
+          else par("mgp"), xpd = par("xpd"), 
+    cex.main = if (nser > 2) 1 
+               else par("cex.main"),
+    verbose = getOption("verbose"), ...) {
+  
+    ci.type <- match.arg(ci.type)
+    if ((nser <- ncol(x$lag)) < 1L) 
+        stop("x$lag must have at least 1 column")
+    if (is.null(ylab)) 
+        ylab <- switch(x$type, correlation = "ACF", covariance = "ACF (cov)", 
+            partial = "Partial ACF")
+    if (is.null(snames <- x$snames)) 
+      snames <- paste("Series ", if (nser == 1L) x$series
+        else 1L:nser)
+    
+    with.ci <- ci > 0 && x$type != "covariance"
+    with.ci.ma <- with.ci && ci.type == "ma" && x$type == "correlation"
+    if (with.ci.ma && x$lag[1L, 1L, 1L] != 0L) {
+        warning("can use ci.type=\"ma\" only if first lag is 0")
+        with.ci.ma <- FALSE
+    }
+    
+    clim0 <- if (with.ci) qnorm((1 + ci)/2)/sqrt(x$n.used)
+    else c(0, 0)
+    
+    Npgs <- 1L
+    nr <- nser
+    
+    if (nser > 1L) {
+        sn.abbr <- if (nser > 2L) abbreviate(snames)
+        else snames
+        
+        if (nser > max.mfrow) {
+            Npgs <- ceiling(nser/max.mfrow)
+            nr <- ceiling(nser/Npgs)
+        }
+        
+        ### Not included below: mfrow = rep(nr, 2L)
+        opar <- par(mar = mar, oma = oma, mgp = mgp, 
+            ask = ask, xpd = xpd, cex.main = cex.main)
+        on.exit(par(opar))
+        
+        if (verbose) {
+            message("par(*) : ", appendLF = FALSE, domain = NA)
+            str(par("mfrow", "cex", "cex.main", "cex.axis", "cex.lab", 
+                "cex.sub"))
+        }
+    }
+    
+    if (is.null(ylim)) {
+        ylim <- range(x$acf[, 1L:nser, 1L:nser], na.rm = TRUE)
+        if (with.ci) ylim <- range(c(-clim0, clim0, ylim))
+        if (with.ci.ma) {
+            for (i in 1L:nser) {
+                clim <- clim0 * sqrt(cumsum(c(1, 2 * x$acf[-1, 
+                  i, i]^2)))
+                ylim <- range(c(-clim, clim, ylim))
+            }
+        }
+    }
+    
+    for (I in 1L:Npgs) for (J in 1L:Npgs) {
+        dev.hold()
+        iind <- (I - 1) * nr + 1L:nr
+        jind <- (J - 1) * nr + 1L:nr
+        if (verbose) 
+            message(gettextf("Page [%d,%d]: i =%s; j =%s", I, 
+                J, paste(iind, collapse = ","), paste(jind, collapse = ",")), 
+                domain = NA)
+        for (i in iind) for (j in jind) if (max(i, j) > nser) {
+            frame()
+            box(col = "light gray")
+        }
+        else {
+            clim <- if (with.ci.ma && i == j) 
+                clim0 * sqrt(cumsum(c(1, 2 * x$acf[-1, i, j]^2)))
+            else clim0
+            plot(x$lag[, i, j], x$acf[, i, j], type = type, xlab = xlab, 
+                ylab = if (j == 1) 
+                  ylab
+                else "", ylim = ylim, ...)
+            abline(h = 0)
+            if (with.ci && ci.type == "white") 
+                abline(h = c(clim, -clim), col = ci.col, lty = 2)
+            else if (with.ci.ma && i == j) {
+                clim <- clim[-length(clim)]
+                lines(x$lag[-1, i, j], clim, col = ci.col, lty = 2)
+                lines(x$lag[-1, i, j], -clim, col = ci.col, lty = 2)
+            }
+            title(if (!is.null(main)) 
+                main
+            else if (i == j) 
+                snames[i]
+            else paste(sn.abbr[i], "&", sn.abbr[j]), line = if (nser > 
+                2) 
+                1
+            else 2)
+        }
+        if (Npgs > 1) {
+            mtext(paste("[", I, ",", J, "]"), side = 1, line = -0.2, 
+                adj = 1, col = "dark gray", cex = 1, outer = TRUE)
+        }
+        dev.flush()
+    }
+    invisible()
+}
 ```
 
-## Including Plots
+<!-- Exploratory Data Analysis -->
 
-You can also embed plots, for example:
+```{r EDA}
+# Visualize the response variable of interest
+temp_plot(ts_vars[,'Num Deaths'], ylab='Number of Deaths', main='Mortality Rate in London (2002-2007)')
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+# Visualize all the time series together
+temp_plot(ts_vars, main='Individual Series for London (2002 - 2007)')
+
+# Pairs plot of individual series
+pairs(ts_vars, cex=0.75, pch=16)
+
+# ACF/PACF plots
+par(mfrow=c(1,4))
+acfs <- apply(ts_vars, 2, acf, main='')
+acfs_diff <- apply(diff(ts_vars, 365), 2, acf, main='')
+
+pacfs <- apply(ts_vars, 2, pacf, main='')
+pacfs_diff <- apply(diff(ts_vars, 365), 2, pacf, main='')
+par(mfrow=c(1,1))
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+<!-- Model Fitting -->
+
+```{r model fitting functions}
+# Time series regression model
+ts_reg_func <- function(train, test) {
+  
+  # Training portion
+  attach(as.data.frame(train))
+  temp = train[,'Temperature'] - mean(train[,'Temperature'])
+  temp2 = temp^2
+  trend = time(temp)
+  
+  # fit1 = lm(`Num Deaths` ~ trend + temp + temp2 + train[,'Ozone'] + train[,'Relative Humidity'])
+  # plot(resid(fit1)); abline(h=0, col='red', lwd=2)
+  # qqnorm(resid(fit1)); qqline(resid(fit1))
+  # invisible(acf2(resid(fit1), 365))
+  
+  # fit2 = arima(`Num Deaths`, order=c(4, 0, 14), 
+  #   xreg=cbind(trend, temp, temp2, Ozone=train[,'Ozone'], `Relative Humidity`=train[,'Relative Humidity']))
+  #   #sarima(ts_vars[,'Num Deaths'], p=1, d=0, q=1, xreg = cbind(trend, temp, temp2, `Ozone, `Relative Humidity`))
+  # plot(resid(fit2), type='l'); abline(h=0, col='red', lwd=2)
+  # qqnorm(resid(fit2)); qqline(resid(fit2))
+  # invisible(acf2(resid(fit2), 365))
+  
+  fit3 = auto.arima(`Num Deaths`, 
+    xreg=cbind(trend, temp, temp2, Ozone=train[,'Ozone'], `Relative Humidity`=train[,'Relative Humidity']),
+    seasonal=T, stepwise=F, approximation=F)
+  plot(resid(fit3)); abline(h=0, col='red', lwd=2)
+  qqnorm(resid(fit3)); qqline(resid(fit3))
+  invisible(acf2(resid(fit3), 365))
+  detach(as.data.frame(train))
+  
+  # Testing portion
+  temp = test[,'Temperature'] - mean(test[,'Temperature'])
+  temp2 = temp^2
+  trend = time(temp)
+
+  fcast <- forecast(fit3, xreg=cbind(trend, temp, temp2, Ozone=test[,'Ozone'], `Relative Humidity`=test[,'Relative Humidity']))
+
+  fcast$x <- ts(fcast$x, start=c(2002, 1), frequency=365)
+  fcast$mean = ts(fcast$mean, start=c(min(time(test)) %/% 1, min(time(test)) %% 1), frequency=365)
+  fcast$upper = ts(fcast$upper, start=c(min(time(test)) %/% 1, min(time(test)) %% 1), frequency=365)
+  fcast$lower = ts(fcast$lower, start=c(min(time(test)) %/% 1, min(time(test)) %% 1), frequency=365)
+
+  plot(fcast)
+  lines(test[,'Num Deaths'], col='red')
+}
+
+# Basic VAR(p) model
+var_func <- function(train, test) {
+  # Calculate Information Criteria for different VAR(p) models
+  VARselect_res <- VARselect(train, season=365, type='none')
+  
+  ### Determining VAR model based on VARselect_res
+  var_res <- vars::VAR(train, p=min(VARselect_res$selection), season=365, type='none')
+  
+  # Display fitted values and original series
+  temp_plot(train, other=ts(fitted(var_res), start=c(2002, 1), frequency=365),
+    other_col='blue', main='')
+  
+  plot(forecast(var_res, h=nrow(test)))
+  
+  # Display ACF/CCF plots
+  acf(resid(var_res), lag.max=365)
+}
+```
+
+```{r model fitting results}
+ts_reg_func(train_2, test_2)
+var_func(train_2, test_2)
+```
+

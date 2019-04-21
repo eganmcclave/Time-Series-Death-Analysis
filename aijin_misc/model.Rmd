@@ -104,13 +104,14 @@ fcast <- forecast(fit, xreg=cbind(trend, temp, temp2, `Ozone` = test[, 'Ozone'],
 #plot(ts_vars[,'Num Deaths'])
 
 fcast$x <- ts(fcast$x, start=c(2002, 1), frequency=365)
-fcast$mean = ts(fcast$mean, start=c(2006, 356), frequency=365)
-fcast$upper = ts(fcast$upper, start=c(2006, 356), frequency=365)
-fcast$lower = ts(fcast$lower, start=c(2006, 356), frequency=365)
+fcast$mean = ts(fcast$mean, start=c(2006, 1), frequency=365)
+fcast$upper = ts(fcast$upper, start=c(2006, 1), frequency=365)
+fcast$lower = ts(fcast$lower, start=c(2006, 1), frequency=365)
 
-plot(fcast)
-lines(test[,'Num Deaths'], col='red')
-
-#nnetar_func(train, test)
+plot(train[,"Num Deaths"], xlim = c(2002, 2007))
+lines(test[,"Num Deaths"], col = "darkgrey")
+lines(fcast$upper[,2], col = "red", lty = 2)
+lines(fcast$lower[,2], col = "red", lty = 2)
+lines(fcast$mean, col = "red")
 ```
 

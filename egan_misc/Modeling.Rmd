@@ -1,0 +1,103 @@
+
+
+```{r prelim, include=FALSE}
+# Load packages
+pkgs <- c('xtable', 'astsa', 'vars', 'MTS', 'foreign', 'knitr', 'lubridate')
+lapply(pkgs, library, character.only=T)
+
+# Load data
+### Custom color palette
+cols <- c('#000000', '#999999', '#E69F00', '#56B4E9', '#009E73',
+          '#FF0000', '#F0E442', '#0072B2', '#D55E00', '#CC79A7')
+
+### Dataset
+df <- read.dta('../data/ije-2012-10-0989-File003.dta')
+colnames(df) <- c('Date', 'Ozone', 'Temperature', 'Relative Humidity', 'Num Deaths')
+
+# Combine the series into a ts object with appropriate time series labeling
+ts_vars <- ts(with(df, cbind(Ozone, Temperature, `Relative Humidity`, `Num Deaths`)),
+              start=c(2002, 1), frequency=365)
+
+# Cache chunk options
+opts_chunk$set(cache=T, autodep=T, cache.comments=F)
+```
+
+```{r}
+# Time series regression model
+attach(as.data.frame(ts_vars))
+temp = Temperature - mean(Temperature)
+temp2 = temp^2
+trend = time(temp)
+
+fit1 = lm(`Num Deaths` ~ trend + temp + temp2 + Ozone + `Relative Humidity`, na.action=NULL)
+plot(resid(fit1)); abline(h=0, col='red', lwd=2)
+qqnorm(resid(fit1)); qqline(resid(fit1))
+invisible(acf2(resid(fit1), 365))
+
+fit2 = 
+  arima(`Num Deaths`, order = c(4,0,14), xreg = cbind(trend, temp, temp2, Ozone, `Relative Humidity`))
+  #sarima(ts_vars[,'Num Deaths'], p=1, d=0, q=1, xreg = cbind(trend, temp, temp2, `Ozone, `Relative Humidity`))
+plot(resid(fit2), type='l'); abline(h=0, col='red', lwd=2)
+qqnorm(resid(fit2)); qqline(resid(fit2))
+invisible(acf2(resid(fit2), 365))
+
+fit3 = auto.arima(`Num Deaths`, xreg=cbind(trend, temp, temp2, Ozone, `Relative Humidity`),
+                  seasonal=T, stepwise=F, approximation=F)
+plot(resid(fit3)); abline(h=0, col='red', lwd=2)
+qqnorm(resid(fit3)); qqline(resid(fit3))
+invisible(acf2(resid(fit3), 365))
+
+plot(`Temperature`, `Num Deaths`)
+xvals = seq(min(`Temperature`), max(`Temperature`) + 1)
+lines(xvals, 
+      coef(fit1)['(Intercept)'] + 
+        coef(fit1)['trend'] * mean(trend) + 
+        coef(fit1)['temp'] * (xvals - mean(Temperature)) + 
+        coef(fit1)['temp2'] * (xvals - mean(Temperature))^2 + 
+        coef(fit1)['Ozone'] * mean(`Ozone`) + 
+        coef(fit1)['`Relative Humidity`'] * mean(`Relative Humidity`), 
+      col = "red", lwd=2)
+lines(xvals,
+      coef(fit2)['intercept'] + 
+        coef(fit2)['trend'] * mean(trend) + 
+        coef(fit2)['temp'] * (xvals - mean(Temperature)) + 
+        coef(fit2)['temp2'] * (xvals - mean(Temperature))^2 + 
+        coef(fit2)['Ozone'] * mean(Ozone) + 
+        coef(fit2)['Relative Humidity'] * mean(`Relative Humidity`), 
+      col = "blue", lwd=2)
+lines(xvals,
+      coef(fit3)['intercept'] + 
+        coef(fit3)['trend'] * mean(trend) + 
+        coef(fit3)['temp'] * (xvals - mean(Temperature)) + 
+        coef(fit3)['temp2'] * (xvals - mean(Temperature))^2 + 
+        coef(fit3)['Ozone'] * mean(Ozone) + 
+        coef(fit3)['Relative Humidity'] * mean(`Relative Humidity`), 
+      col = "green", lwd=2)
+detach(as.data.frame(ts_vars))
+```
+
+```{r}
+# Basic VAR(p) model
+### Calculate Information Criteria for different VAR(p) models
+VARselect_res <- VARselect(ts_vars, season=365, type='none')
+
+### Determining VAR model based on VARselect_res
+var_res <- vars::VAR(ts_vars, p=min(VARselect_res$selection), season=365, type='none')
+
+### Display fitted values and original series
+temp_plot(ts_vars, other=ts(fitted(var_res), start=c(2002, 1), frequency=365),
+  other_col='blue', main='')
+
+plot(forecast(var_res, h=(365/1)))
+
+### Display ACF/CCF plots
+acf(resid(var_res), lag.max=365)
+```
+
+```{r}
+# seasonal varma model
+#MTS::sVARMACpp()
+fit4 <- MTS::sVARMACpp(ts_vars, c(1, 0, 1), c(3, 0, 9), s=365)
+```
+
+

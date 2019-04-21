@@ -6,9 +6,17 @@ pkgs <- c('xtable', 'astsa', 'vars', 'foreign', 'knitr', 'lubridate')
 lapply(pkgs, library, character.only=T)
 
 # Load data
+### Custom color palette
 cols <- c('#000000', '#999999', '#E69F00', '#56B4E9', '#009E73',
           '#FF0000', '#F0E442', '#0072B2', '#D55E00', '#CC79A7')
+
+### Dataset
 df <- read.dta('../data/ije-2012-10-0989-File003.dta')
+colnames(df) <- c('Date', 'Ozone', 'Temperature', 'Relative Humidity', 'Num Deaths')
+
+# Combine the series into a ts object with appropriate time series labeling
+ts_vars <- ts(with(df, cbind(Ozone, Temperature, `Relative Humidity`, `Num Deaths`)),
+              start=c(2002, 1), frequency=365)
 
 # Cache chunk options
 opts_chunk$set(cache=T, autodep=T, cache.comments=F)
@@ -183,9 +191,7 @@ temp_plot <- function (x, y = NULL, plot.type = c("multiple", "single"), xy.labe
         xy.lines = xy.lines, panel = panel, nc = nc, xlabel = xlabel, 
         ylabel = ylabel, axes = axes, other=other, other_col=other_col, other_lwd=other_lwd, ...)
 }
-```
 
-```{r}
 ### Old acf
 old_acf <- stats:::plot.acf
 
@@ -305,24 +311,6 @@ plot.acf <- function (x, ci = 0.95, type = "h", xlab = "Lag", ylab = NULL, ylim 
 }
 ```
 
-<!-- VARIABLES OF INTEREST
-  Time values:
-    date
-  
-  Series values:
-    ozone
-    temperature
-    relative_humidity
-    numdeaths (Response)
--->
-
-```{r}
-colnames(df) <- c('Date', 'Ozone', 'Temperature', 'Relative Humidity', 'Num Deaths')
-
-# Combine the series into a ts object with appropriate time series labeling
-ts_vars <- ts(with(df, cbind(Ozone, Temperature, `Relative Humidity`, `Num Deaths`)), start=c(2002, 1), frequency=365)
-```
-
 ```{r}
 # Visualize the response variable of interest
 temp_plot(ts_vars[,'Num Deaths'], ylab='Number of Deaths')
@@ -337,24 +325,18 @@ temp_plot(diff(ts_vars), other=ts(matrix(0, ncol=4, nrow=1825), start=c(2002,1),
 ```
 
 ```{r}
-par(mfrow=c(2,4))
+par(mfrow=c(1,4))
 acfs <- apply(ts_vars, 2, acf, main='')
-acfs_diff <- apply(diff(ts_vars), 2, acf, main='')
+acfs_diff <- apply(diff(ts_vars, 365), 2, acf, main='')
 
 pacfs <- apply(ts_vars, 2, pacf, main='')
-pacfs_diff <- apply(diff(ts_vars), 2, pacf, main='')
+pacfs_diff <- apply(diff(ts_vars, 365), 2, pacf, main='')
 par(mfrow=c(1,1))
 ```
 
-<!-- Future steps
-  Series evaluation:
-    residuals?
-      monthplot?
-      yearplot?
-    forecasting?
-      hold out portions of the response?
-#df[which.max(ts_vars[,'Num Deaths']), 'Date']
--->
+```{r}
+pairs(ts_vars, cex=0.75, pch=16)
+```
 
 ```{r}
 # arrange sequence of dates into months for phase cycle in monthplot
@@ -370,21 +352,21 @@ cycles <- unlist(sapply(seq_along(t), function(i, days_per_month) {
 # display monthplot of original series
 par(mfrow=c(2,4))
 invisible(sapply(1:ncol(ts_vars), function(i_var) {
-  monthplot(ts_vars[,i_var], ylab=colnames(ts_vars)[i_var])
+  monthplot(ts_vars[,i_var], ylab=colnames(ts_vars)[i_var], cex.axis=0.75, cex.lab=2)
 }))
 
 invisible(sapply(1:ncol(ts_vars), function(i_var) {
-  monthplot(ts_vars[,i_var], ylab=colnames(ts_vars)[i_var], phase=cycles)
+  monthplot(ts_vars[,i_var], ylab=colnames(ts_vars)[i_var], phase=cycles, cex.axis=0.75, cex.lab=2)
 }))
 
 # stl decomposition for all series
 par(mfrow=c(4,4))
 invisible(sapply(colnames(ts_vars), function(var_name) {
   fit <- stl(ts_vars[,var_name], s.window='periodic')
-  monthplot(ts_vars[,var_name], ylab='data', cex.axis=0.8, phase=cycles)
-  monthplot(fit, choice='seasonal', cex.axis = 0.8, phase=cycles)
-  monthplot(fit, choice = "trend", cex.axis = 0.8, phase=cycles)
-  monthplot(fit, choice = "remainder", type = "h", cex.axis = 0.8, phase=cycles)
+  monthplot(ts_vars[,var_name], ylab='data', phase=cycles, cex.axis = 1.5, cex.lab=2)
+  monthplot(fit, choice='seasonal', phase=cycles, cex.axis = 1.5, cex.lab=2)
+  monthplot(fit, choice = "trend", phase=cycles, cex.axis = 1.5, cex.lab=2)
+  monthplot(fit, choice = "remainder", type = "h", phase=cycles, cex.axis = 1.5, cex.lab=2)
 }))
 par(mfrow=c(1,1))
 ```

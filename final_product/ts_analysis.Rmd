@@ -37,27 +37,27 @@ opts_chunk$set(cache=T, autodep=T, cache.comments=F)
 
 ```{r custom functions}
 ### New plot.ts
-temp_plot <- function (x, y = NULL, plot.type = c("multiple", "single"), xy.labels, xy.lines, panel = lines, nc, yax.flip = FALSE, 
+temp_plot <- function (x, y = NULL, plot.type = c('multiple', 'single'), xy.labels, xy.lines, panel = lines, nc, yax.flip = FALSE, 
     mar.multi = c(0, 5.1, 0, if (yax.flip) 5.1 else 2.1), oma.multi = c(6, 0, 5, 0), axes = TRUE, other=NULL, other_col='red', other_lwd=2, ...) {
   
-    plotts <- function(x, y = NULL, plot.type = c("multiple", "single"), xy.labels, xy.lines, panel = lines, nc, xlabel, 
-        ylabel, type = "l", xlim = NULL, ylim = NULL, xlab = "Time", ylab, log = "", col = par("col"), bg = NA, pch = par("pch"), 
-        cex = par("cex"), lty = par("lty"), lwd = par("lwd"), axes = TRUE, frame.plot = axes, ann = par("ann"), cex.lab = par("cex.lab"), 
-        col.lab = par("col.lab"), font.lab = par("font.lab"), cex.axis = par("cex.axis"), col.axis = par("col.axis"), 
-        font.axis = par("font.axis"), main = NULL, other=NULL, other_col='red', other_lwd=2, ...) {
+    plotts <- function(x, y = NULL, plot.type = c('multiple', 'single'), xy.labels, xy.lines, panel = lines, nc, xlabel, 
+        ylabel, type = 'l', xlim = NULL, ylim = NULL, xlab = 'Time', ylab, log = '', col = par('col'), bg = NA, pch = par('pch'), 
+        cex = par('cex'), lty = par('lty'), lwd = par('lwd'), axes = TRUE, frame.plot = axes, ann = par('ann'), cex.lab = par('cex.lab'), 
+        col.lab = par('col.lab'), font.lab = par('font.lab'), cex.axis = par('cex.axis'), col.axis = par('col.axis'), 
+        font.axis = par('font.axis'), main = NULL, other=NULL, other_col='red', other_lwd=2, ...) {
       
         plot.type <- match.arg(plot.type)
         nser <- NCOL(x)
         
-        if (plot.type == "multiple" && nser > 1) {
-            addmain <- function(main, cex.main = par("cex.main"), font.main = par("font.main"), col.main = par("col.main"), ...)
+        if (plot.type == 'multiple' && nser > 1) {
+            addmain <- function(main, cex.main = par('cex.main'), font.main = par('font.main'), col.main = par('col.main'), ...)
             mtext(main, side = 3, line = 3, cex = cex.main, font = font.main, col = col.main, ...)
             panel <- match.fun(panel)
             nser <- NCOL(x)
-            if (nser > 10) stop("cannot plot more than 10 series as \"multiple\"")
+            if (nser > 10) stop('cannot plot more than 10 series as \'multiple\'')
             if (is.null(main)) main <- xlabel
             nm <- colnames(x)
-            if (is.null(nm))  nm <- paste("Series", 1L:nser)
+            if (is.null(nm))  nm <- paste('Series', 1L:nser)
             if (missing(nc)) 
                 nc <- if (nser > 4) 2
                 else 1
@@ -67,8 +67,8 @@ temp_plot <- function (x, y = NULL, plot.type = c("multiple", "single"), xy.labe
             on.exit(par(oldpar))
             
             for (i in 1L:nser) {
-                plot.default(x[, i], axes = FALSE, xlab = "", ylab = "", log = log,
-                    col = col, bg = bg, pch = pch, ann = ann, type = "n", ...)
+                plot.default(x[, i], axes = FALSE, xlab = '', ylab = '', log = log,
+                    col = col, bg = bg, pch = pch, ann = ann, type = 'n', ...)
                 panel(x[, i], col = col, bg = bg, pch = pch, cex = cex, lwd = lwd,
                     lty = lty, type = type, ...)
                 
@@ -106,7 +106,7 @@ temp_plot <- function (x, y = NULL, plot.type = c("multiple", "single"), xy.labe
         x <- as.ts(x)
         if (!is.null(y)) {
             y <- hasTsp(y)
-            if (NCOL(x) > 1 || NCOL(y) > 1) stop("scatter plots only for univariate time series")
+            if (NCOL(x) > 1 || NCOL(y) > 1) stop('scatter plots only for univariate time series')
             if (is.ts(x) && is.ts(y)) {
                 xy <- ts.intersect(x, y)
                 xy <- xy.coords(xy[, 1], xy[, 2], xlabel, ylabel, log)
@@ -129,11 +129,11 @@ temp_plot <- function (x, y = NULL, plot.type = c("multiple", "single"), xy.labe
             if (missing(xy.labels)) xy.labels <- (n <= 150)
             do.lab <- if (is.logical(xy.labels)) xy.labels
             else {
-                if (!is.character(xy.labels)) stop("'xy.labels' must be logical or character")
+                if (!is.character(xy.labels)) stop(''xy.labels' must be logical or character')
                 TRUE
             }
-            ptype <- if (do.lab) "n"
-            else if (missing(type)) "p"
+            ptype <- if (do.lab) 'n'
+            else if (missing(type)) 'p'
             else type
             
             dev.hold()
@@ -152,8 +152,8 @@ temp_plot <- function (x, y = NULL, plot.type = c("multiple", "single"), xy.labe
             if (xy.lines) 
                 lines(xy, col = col, lty = lty, lwd = lwd, 
                       type = if (do.lab) 
-                  "c"
-                else "l")
+                  'c'
+                else 'l')
             
             return(invisible())
         }
@@ -206,32 +206,32 @@ temp_plot <- function (x, y = NULL, plot.type = c("multiple", "single"), xy.labe
 old_acf <- stats:::plot.acf
 
 ### New acf
-plot.acf <- function (x, ci = 0.95, type = "h", xlab = "Lag", ylab = NULL, ylim = NULL, main = NULL, ci.col = "blue", 
-    ci.type = c("white", "ma"), max.mfrow = 6, ask = Npgs > 1 && dev.interactive(), 
+plot.acf <- function (x, ci = 0.95, type = 'h', xlab = 'Lag', ylab = NULL, ylim = NULL, main = NULL, ci.col = 'blue', 
+    ci.type = c('white', 'ma'), max.mfrow = 6, ask = Npgs > 1 && dev.interactive(), 
     mar = if (nser > 2) c(3, 2, 2, 0.8) 
-          else par("mar"), 
+          else par('mar'), 
     oma = if (nser > 2) c(1, 1.2, 1, 1) 
-          else par("oma"), 
+          else par('oma'), 
     mgp = if (nser > 2) c(1.5, 0.6, 0) 
-          else par("mgp"), xpd = par("xpd"), 
+          else par('mgp'), xpd = par('xpd'), 
     cex.main = if (nser > 2) 1 
-               else par("cex.main"),
-    verbose = getOption("verbose"), ...) {
+               else par('cex.main'),
+    verbose = getOption('verbose'), ...) {
   
     ci.type <- match.arg(ci.type)
     if ((nser <- ncol(x$lag)) < 1L) 
-        stop("x$lag must have at least 1 column")
+        stop('x$lag must have at least 1 column')
     if (is.null(ylab)) 
-        ylab <- switch(x$type, correlation = "ACF", covariance = "ACF (cov)", 
-            partial = "Partial ACF")
+        ylab <- switch(x$type, correlation = 'ACF', covariance = 'ACF (cov)', 
+            partial = 'Partial ACF')
     if (is.null(snames <- x$snames)) 
-      snames <- paste("Series ", if (nser == 1L) x$series
+      snames <- paste('Series ', if (nser == 1L) x$series
         else 1L:nser)
     
-    with.ci <- ci > 0 && x$type != "covariance"
-    with.ci.ma <- with.ci && ci.type == "ma" && x$type == "correlation"
+    with.ci <- ci > 0 && x$type != 'covariance'
+    with.ci.ma <- with.ci && ci.type == 'ma' && x$type == 'correlation'
     if (with.ci.ma && x$lag[1L, 1L, 1L] != 0L) {
-        warning("can use ci.type=\"ma\" only if first lag is 0")
+        warning('can use ci.type=\'ma\' only if first lag is 0')
         with.ci.ma <- FALSE
     }
     
@@ -256,9 +256,9 @@ plot.acf <- function (x, ci = 0.95, type = "h", xlab = "Lag", ylab = NULL, ylim 
         on.exit(par(opar))
         
         if (verbose) {
-            message("par(*) : ", appendLF = FALSE, domain = NA)
-            str(par("mfrow", "cex", "cex.main", "cex.axis", "cex.lab", 
-                "cex.sub"))
+            message('par(*) : ', appendLF = FALSE, domain = NA)
+            str(par('mfrow', 'cex', 'cex.main', 'cex.axis', 'cex.lab', 
+                'cex.sub'))
         }
     }
     
@@ -279,12 +279,12 @@ plot.acf <- function (x, ci = 0.95, type = "h", xlab = "Lag", ylab = NULL, ylim 
         iind <- (I - 1) * nr + 1L:nr
         jind <- (J - 1) * nr + 1L:nr
         if (verbose) 
-            message(gettextf("Page [%d,%d]: i =%s; j =%s", I, 
-                J, paste(iind, collapse = ","), paste(jind, collapse = ",")), 
+            message(gettextf('Page [%d,%d]: i =%s; j =%s', I, 
+                J, paste(iind, collapse = ','), paste(jind, collapse = ',')), 
                 domain = NA)
         for (i in iind) for (j in jind) if (max(i, j) > nser) {
             frame()
-            box(col = "light gray")
+            box(col = 'light gray')
         }
         else {
             clim <- if (with.ci.ma && i == j) 
@@ -293,9 +293,9 @@ plot.acf <- function (x, ci = 0.95, type = "h", xlab = "Lag", ylab = NULL, ylim 
             plot(x$lag[, i, j], x$acf[, i, j], type = type, xlab = xlab, 
                 ylab = if (j == 1) 
                   ylab
-                else "", ylim = ylim, ...)
+                else '', ylim = ylim, ...)
             abline(h = 0)
-            if (with.ci && ci.type == "white") 
+            if (with.ci && ci.type == 'white') 
                 abline(h = c(clim, -clim), col = ci.col, lty = 2)
             else if (with.ci.ma && i == j) {
                 clim <- clim[-length(clim)]
@@ -306,14 +306,14 @@ plot.acf <- function (x, ci = 0.95, type = "h", xlab = "Lag", ylab = NULL, ylim 
                 main
             else if (i == j) 
                 snames[i]
-            else paste(sn.abbr[i], "&", sn.abbr[j]), line = if (nser > 
+            else paste(sn.abbr[i], '&', sn.abbr[j]), line = if (nser > 
                 2) 
                 1
             else 2)
         }
         if (Npgs > 1) {
-            mtext(paste("[", I, ",", J, "]"), side = 1, line = -0.2, 
-                adj = 1, col = "dark gray", cex = 1, outer = TRUE)
+            mtext(paste('[', I, ',', J, ']'), side = 1, line = -0.2, 
+                adj = 1, col = 'dark gray', cex = 1, outer = TRUE)
         }
         dev.flush()
     }
@@ -350,14 +350,14 @@ seasonal = lapply(df[,2:5], function(x, vars) {
   return(temp$seasonal)
   })
 
-plot.ts(do.call(cbind, seasonal), main = "Decomposed Seasonality Series for London (2002-2007)")
+plot.ts(do.call(cbind, seasonal), main = 'Decomposed Seasonality Series for London (2002-2007)')
 ## trend
 trend = lapply(df[,2:5], function(x, vars) {
   x <- ts(x, start=c(2002, 1), frequency=365)
   temp <- decompose(x)
   return(temp$trend)
   })
-plot.ts(do.call(cbind, trend), main = "Decomposed Trend Series for London (2002-2007)")
+plot.ts(do.call(cbind, trend), main = 'Decomposed Trend Series for London (2002-2007)')
 ```
 
 <!-- Model Fitting -->
@@ -385,16 +385,16 @@ qqnorm(resid(fit2)); qqline(resid(fit2))
 invisible(acf2(resid(fit2), 365))
 
 fit3 = auto.arima(train[, 'Num Deaths'],
-  xreg=cbind(trend, temp, temp2, Ozone=train[,'Ozone'], `Relative Humidity`=train[,'Relative Humidity']),
+  xreg=cbind(trend, temp, temp2, Ozone=train[, 'Ozone'], `Relative Humidity`=train[, 'Relative Humidity']),
   seasonal=T, stepwise=F, approximation=F, optim.control=list(maxit=1000))
-plot(train[,'Num Deaths']); lines(fitted(fit3), col='blue')
+plot(train[, 'Num Deaths']); lines(fitted(fit3), col='blue')
 plot(resid(fit3)); abline(h=0, col='red', lwd=2)
 qqnorm(resid(fit3)); qqline(resid(fit3))
 invisible(acf2(resid(fit3), 365))
 detach(as.data.frame(train))
 
 # Testing portion
-temp = test[,'Temperature'] - mean(test[,'Temperature'])
+temp = test[, 'Temperature'] - mean(test[, 'Temperature'])
 temp2 = temp^2
 trend = time(temp)
 
@@ -405,12 +405,12 @@ fcast$mean = ts(fcast$mean, start=c(2006, 1), frequency=365)
 fcast$upper = ts(fcast$upper, start=c(2006, 1), frequency=365)
 fcast$lower = ts(fcast$lower, start=c(2006, 1), frequency=365)
 
-plot(train[,"Num Deaths"], ylab='Number of Deaths', 
-     xlim = c(2002, 2007), ylim=range(fcast$lower, fcast$upper, ts_vars[,'Num Deaths']))
-lines(test[,"Num Deaths"], col = "darkgrey")
-lines(fcast$upper[,2], col = "red", lty = 2)
-lines(fcast$lower[,2], col = "red", lty = 2)
-lines(fcast$mean, col = "red")
+plot(train[, 'Num Deaths'], ylab='Number of Deaths', 
+     xlim = c(2002, 2007), ylim=range(fcast$lower, fcast$upper, ts_vars[, 'Num Deaths']))
+lines(test[, 'Num Deaths'], col = 'darkgrey')
+lines(fcast$upper[,2], col = 'red', lty = 2)
+lines(fcast$lower[,2], col = 'red', lty = 2)
+lines(fcast$mean, col = 'red')
 ```
 
 ```{r model fitting 2}
@@ -443,59 +443,53 @@ fcast$forecast$Num.Deaths$mean = ts(fcast$forecast$Num.Deaths$mean, start=c(2006
 fcast$forecast$Num.Deaths$upper = ts(fcast$forecast$Num.Deaths$upper, start=c(2006, 1), frequency=365)
 fcast$forecast$Num.Deaths$lower = ts(fcast$forecast$Num.Deaths$lower, start=c(2006, 1), frequency=365)
 
-plot(train[,"Num Deaths"], ylab='Number of Deaths', xlim = c(2002, 2007), 
-     ylim=range(fcast$forecast$Num.Deaths$lower, fcast$forecast$Num.Deaths$upper, ts_vars[,'Num Deaths']))
-lines(test[,"Num Deaths"], col = "darkgrey")
-lines(fcast$forecast$Num.Deaths$upper[,2], col = "red", lty = 2)
-lines(fcast$forecast$Num.Deaths$lower[,2], col = "red", lty = 2)
-lines(fcast$forecast$Num.Deaths$mean, col = "red")
+plot(train[, 'Num Deaths'], ylab='Number of Deaths', xlim = c(2002, 2007), 
+     ylim=range(fcast$forecast$Num.Deaths$lower, fcast$forecast$Num.Deaths$upper, ts_vars[, 'Num Deaths']))
+lines(test[, 'Num Deaths'], col='darkgrey')
+lines(fcast$forecast$Num.Deaths$upper[,2], col = 'red', lty = 2)
+lines(fcast$forecast$Num.Deaths$lower[,2], col = 'red', lty = 2)
+lines(fcast$forecast$Num.Deaths$mean, col = 'red')
 ```
 
 ```{r model fitting 3}
 # NNETAR Model
-nnetar_func <- function(train, test){
+attach(as.data.frame(train))
+temp = train[,'Temperature'] - mean(train[,'Temperature'])
+temp2 = temp^2
+trend = time(temp)
+fit <- nnetar(`Num Deaths`,
+  xreg=cbind(trend, temp, temp2, `Ozone`=train[, 'Ozone'],
+             `Relative Humidity`=train[, 'Relative Humidity']))
+detach(as.data.frame(train))
 
-  attach(as.data.frame(train))
-  temp = train[,'Temperature'] - mean(train[,'Temperature'])
-  temp2 = temp^2
-  trend = time(temp)
-  fit <- nnetar(`Num Deaths`,
-                xreg=cbind(trend, temp, temp2, 
-                           `Ozone` = train[, 'Ozone'],
-                           `Relative Humidity` = train[, 'Relative Humidity']))
-  detach(as.data.frame(train))
-  
-  # Plot fitted values vs training data
-  plot(train[,'Num Deaths'], ylab='Number of Deaths')
-  lines(ts(fitted(fit), start=c(2002, 1), frequency=365), col='blue')
-  
-  # Plot residuals 
-  plot(resid(fit)); abline(h=0, col='red', lwd=2)
-  qqnorm(resid(fit)); qqline(resid(fit))
-  invisible(acf2(resid(fit)))
-  
-  # Plot forecasts
-  temp = test[,'Temperature'] - mean(test[,'Temperature'])
-  temp2 = temp^2
-  trend = time(temp)
-  fcast <- forecast(fit, xreg=cbind(trend, temp, temp2, `Ozone` = test[, 'Ozone'], `Relative Humidity` = test[, 'Relative Humidity']), PI=T)
-  
-  fcast$x <- ts(fcast$x, start=c(2002, 1), frequency=365)
-  fcast$mean = ts(fcast$mean, start=c(2006, 1), frequency=365)
-  fcast$upper = ts(fcast$upper, start=c(2006, 1), frequency=365)
-  fcast$lower = ts(fcast$lower, start=c(2006, 1), frequency=365)
-  
-  plot(train[,"Num Deaths"], xlim = c(2002, 2007))
-  lines(test[,"Num Deaths"], col = "darkgrey")
-  lines(fcast$upper[,2], col = "red", lty = 2)
-  lines(fcast$lower[,2], col = "red", lty = 2)
-  lines(fcast$mean, col = "red")
-}
-```
+# Plot fitted values vs training data
+plot(train[,'Num Deaths'], ylab='Number of Deaths')
+lines(ts(fitted(fit), start=c(2002, 1), frequency=365), col='blue')
 
-```{r model fitting results}
-ts_reg_func(train_2, test_2)
-var_func(train_2, test_2)
-nnetar_func(train_1, test_1)
+# Plot residuals over time
+plot(resid(fit)); abline(h=0, col='red', lwd=2)
+
+# Plot QQ plot
+qqnorm(resid(fit)); qqline(resid(fit))
+
+# Plot ACF/PACFk
+invisible(acf2(resid(fit), 365))
+
+# Plot forecasts
+temp = test[,'Temperature'] - mean(test[,'Temperature'])
+temp2 = temp^2
+trend = time(temp)
+fcast <- forecast(fit, xreg=cbind(trend, temp, temp2, `Ozone` = test[, 'Ozone'], `Relative Humidity` = test[, 'Relative Humidity']), PI=T)
+
+fcast$x <- ts(fcast$x, start=c(2002, 1), frequency=365)
+fcast$mean = ts(fcast$mean, start=c(2006, 1), frequency=365)
+fcast$upper = ts(fcast$upper, start=c(2006, 1), frequency=365)
+fcast$lower = ts(fcast$lower, start=c(2006, 1), frequency=365)
+
+plot(train[,'Num Deaths'], xlim = c(2002, 2007))
+lines(test[,'Num Deaths'], col = 'darkgrey')
+lines(fcast$upper[,2], col = 'red', lty = 2)
+lines(fcast$lower[,2], col = 'red', lty = 2)
+lines(fcast$mean, col = 'red')
 ```
 

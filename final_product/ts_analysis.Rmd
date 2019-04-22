@@ -349,6 +349,7 @@ seasonal = lapply(df[,2:5], function(x, vars) {
   temp <- decompose(x)
   return(temp$seasonal)
   })
+
 plot.ts(do.call(cbind, seasonal), main = "Decomposed Seasonality Series for London (2002-2007)")
 ## trend
 trend = lapply(df[,2:5], function(x, vars) {
@@ -383,9 +384,10 @@ plot(resid(fit2)); abline(h=0, col='red', lwd=2)
 qqnorm(resid(fit2)); qqline(resid(fit2))
 invisible(acf2(resid(fit2), 365))
 
-fit3 = auto.arima(`Num Deaths`, 
+fit3 = auto.arima(train[, 'Num Deaths'],
   xreg=cbind(trend, temp, temp2, Ozone=train[,'Ozone'], `Relative Humidity`=train[,'Relative Humidity']),
   seasonal=T, stepwise=F, approximation=F, optim.control=list(maxit=1000))
+plot(train[,'Num Deaths']); lines(fitted(fit3), col='blue')
 plot(resid(fit3)); abline(h=0, col='red', lwd=2)
 qqnorm(resid(fit3)); qqline(resid(fit3))
 invisible(acf2(resid(fit3), 365))
@@ -424,10 +426,29 @@ var_res <- vars::VAR(train, p=min(VARselect_res$selection), season=365, type='no
 temp_plot(train, other=ts(fitted(var_res), start=c(2002, 1), frequency=365),
   other_col='blue', main='')
 
-plot(forecast(var_res, h=nrow(test)))
+# Display residuals over time
+temp_plot(ts(resid(var_res), start=c(2002, 1), frequency=365),
+          other=ts(matrix(0, ncol=4, nrow=nrow(train)), start=c(2002,1), frequency=365), 
+          other_col='red', main='')
 
 # Display ACF/CCF plots
 acf(resid(var_res), lag.max=365)
+
+# Display all forecasts
+plot(fcast <- forecast(var_res, h=nrow(test)))
+
+# Display forecast for response variable
+fcast$forecast$Num.Deaths$x <- ts(fcast$forecast$Num.Deaths$x, start=c(2002, 1), frequency=365)
+fcast$forecast$Num.Deaths$mean = ts(fcast$forecast$Num.Deaths$mean, start=c(2006, 1), frequency=365)
+fcast$forecast$Num.Deaths$upper = ts(fcast$forecast$Num.Deaths$upper, start=c(2006, 1), frequency=365)
+fcast$forecast$Num.Deaths$lower = ts(fcast$forecast$Num.Deaths$lower, start=c(2006, 1), frequency=365)
+
+plot(train[,"Num Deaths"], ylab='Number of Deaths', xlim = c(2002, 2007), 
+     ylim=range(fcast$forecast$Num.Deaths$lower, fcast$forecast$Num.Deaths$upper, ts_vars[,'Num Deaths']))
+lines(test[,"Num Deaths"], col = "darkgrey")
+lines(fcast$forecast$Num.Deaths$upper[,2], col = "red", lty = 2)
+lines(fcast$forecast$Num.Deaths$lower[,2], col = "red", lty = 2)
+lines(fcast$forecast$Num.Deaths$mean, col = "red")
 ```
 
 ```{r model fitting 3}

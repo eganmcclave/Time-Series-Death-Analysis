@@ -341,6 +341,22 @@ acfs_diff <- apply(diff(ts_vars, 365), 2, acf, main='')
 pacfs <- apply(ts_vars, 2, pacf, main='')
 pacfs_diff <- apply(diff(ts_vars, 365), 2, pacf, main='')
 par(mfrow=c(1,1))
+
+# Decomposed plots
+## seasonal
+seasonal = lapply(df[,2:5], function(x, vars) {
+  x <- ts(x, start=c(2002, 1), frequency=365)
+  temp <- decompose(x)
+  return(temp$seasonal)
+  })
+plot.ts(do.call(cbind, seasonal), main = "Decomposed Seasonality Series for London (2002-2007)")
+## trend
+trend = lapply(df[,2:5], function(x, vars) {
+  x <- ts(x, start=c(2002, 1), frequency=365)
+  temp <- decompose(x)
+  return(temp$trend)
+  })
+plot.ts(do.call(cbind, trend), main = "Decomposed Trend Series for London (2002-2007)")
 ```
 
 <!-- Model Fitting -->
@@ -401,7 +417,7 @@ lines(fcast$mean, col = "red")
 # Calculate Information Criteria for different VAR(p) models
 VARselect_res <- VARselect(train, season=365, type='none')
 
-### Determining VAR model based on VARselect_res
+# Determining VAR model based on VARselect_res
 var_res <- vars::VAR(train, p=min(VARselect_res$selection), season=365, type='none')
 
 # Display fitted values and original series
@@ -412,5 +428,53 @@ plot(forecast(var_res, h=nrow(test)))
 
 # Display ACF/CCF plots
 acf(resid(var_res), lag.max=365)
+```
+
+```{r model fitting 3}
+# NNETAR Model
+nnetar_func <- function(train, test){
+
+  attach(as.data.frame(train))
+  temp = train[,'Temperature'] - mean(train[,'Temperature'])
+  temp2 = temp^2
+  trend = time(temp)
+  fit <- nnetar(`Num Deaths`,
+                xreg=cbind(trend, temp, temp2, 
+                           `Ozone` = train[, 'Ozone'],
+                           `Relative Humidity` = train[, 'Relative Humidity']))
+  detach(as.data.frame(train))
+  
+  # Plot fitted values vs training data
+  plot(train[,'Num Deaths'], ylab='Number of Deaths')
+  lines(ts(fitted(fit), start=c(2002, 1), frequency=365), col='blue')
+  
+  # Plot residuals 
+  plot(resid(fit)); abline(h=0, col='red', lwd=2)
+  qqnorm(resid(fit)); qqline(resid(fit))
+  invisible(acf2(resid(fit)))
+  
+  # Plot forecasts
+  temp = test[,'Temperature'] - mean(test[,'Temperature'])
+  temp2 = temp^2
+  trend = time(temp)
+  fcast <- forecast(fit, xreg=cbind(trend, temp, temp2, `Ozone` = test[, 'Ozone'], `Relative Humidity` = test[, 'Relative Humidity']), PI=T)
+  
+  fcast$x <- ts(fcast$x, start=c(2002, 1), frequency=365)
+  fcast$mean = ts(fcast$mean, start=c(2006, 1), frequency=365)
+  fcast$upper = ts(fcast$upper, start=c(2006, 1), frequency=365)
+  fcast$lower = ts(fcast$lower, start=c(2006, 1), frequency=365)
+  
+  plot(train[,"Num Deaths"], xlim = c(2002, 2007))
+  lines(test[,"Num Deaths"], col = "darkgrey")
+  lines(fcast$upper[,2], col = "red", lty = 2)
+  lines(fcast$lower[,2], col = "red", lty = 2)
+  lines(fcast$mean, col = "red")
+}
+```
+
+```{r model fitting results}
+ts_reg_func(train_2, test_2)
+var_func(train_2, test_2)
+nnetar_func(train_1, test_1)
 ```
 

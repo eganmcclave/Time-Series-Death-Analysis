@@ -38,42 +38,43 @@ temp1 <- function(vars) {
 
 #plot.ts(do.call(cbind, head(temp)))
 temp3 <- temp1('seasonal')
-plot.ts(do.call(cbind, temp3))
+plot.ts(do.call(cbind, temp3), main = "Decomposed Seasonality Series for London (2002-2007)")
 temp4 = temp1('trend')
 plot.ts(do.call(cbind, temp4))
 ```
 
 ```{r}
-nnetar_func <- function(train, test) {
-  attach(as.data.frame(train))
-  temp = Temperature - mean(Temperature)
-  temp2 = temp^2
-  trend = time(temp)
-  fit <- nnetar(`Num Deaths`, p=2, xreg=cbind(trend, temp, temp2, `Ozone`,  `Relative Humidity`))
-  detach(as.data.frame(train))
-  
-  attach(as.data.frame(test))
-  # Plot fitted values vs training data
-  plot(train[,'Num Deaths'])
-  lines(ts(fitted(fit), start=c(2002, 1), frequency=365), col='blue')
-
-  # Plot residuals 
-  plot(resid(fit)); abline(h=0, col='red', lwd=2)
-  qqnorm(resid(fit)); qqline(resid(fit))
-  invisible(acf2(resid(fit)))
-
-  # Plot forecasts
-  temp = Temperature - mean(Temperature)
-  temp2 = temp^2
-  trend = time(temp)
-  fcast <- forecast(fit, xreg=cbind(trend, temp, temp2, `Ozone`, `Relative Humidity`), PI=T)
-  plot(ts(fcast, start=c(2002, 1), frequency=365))
-  lines(`Num Deaths`, col='red', lty=2)
-
-  detach(as.data.frame(test))
-}
-
-# 1 year, 6 month, 3 months
+# nnetar_func <- function(train, test) {
+#   attach(as.data.frame(train))
+#   temp = Temperature - mean(Temperature)
+#   temp2 = temp^2
+#   trend = time(temp)
+#   fit <- nnetar(`Num Deaths`, p=2, 
+#                 xreg=cbind(trend, temp, temp2, `Ozone`,  `Relative Humidity`))
+#   detach(as.data.frame(train))
+#   
+#   attach(as.data.frame(test))
+#   # Plot fitted values vs training data
+#   plot(train[,'Num Deaths'])
+#   lines(ts(fitted(fit), start=c(2002, 1), frequency=365), col='blue')
+# 
+#   # Plot residuals 
+#   plot(resid(fit)); abline(h=0, col='red', lwd=2)
+#   qqnorm(resid(fit)); qqline(resid(fit))
+#   invisible(acf2(resid(fit)))
+# 
+#   # Plot forecasts
+#   temp = Temperature - mean(Temperature)
+#   temp2 = temp^2
+#   trend = time(temp)
+#   fcast <- forecast(fit, xreg=cbind(trend, temp, temp2, `Ozone`, `Relative Humidity`), PI=T)
+#   plot(ts(fcast, start=c(2002, 1), frequency=365))
+#   lines(`Num Deaths`, col='red', lty=2)
+# 
+#   detach(as.data.frame(test))
+# }
+# 
+# # 1 year, 6 month, 3 months
 train <- window(ts_vars, start=c(2002, 1), end=c(2005, 365))
 test <- window(ts_vars, start=c(2006, 1), end=c(2007, 1))
 

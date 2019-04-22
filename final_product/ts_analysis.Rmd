@@ -429,48 +429,49 @@ var_func <- function(train, test) {
 }
 
 # NNETAR Model
-train <- window(ts_vars, start=c(2002, 1), end=c(2005, 365))
-test <- window(ts_vars, start=c(2006, 1), end=c(2007, 1))
+nnetar_func <- function(train, test){
 
-attach(as.data.frame(train))
-temp = train[,'Temperature'] - mean(train[,'Temperature'])
-temp2 = temp^2
-trend = time(temp)
-fit <- nnetar(`Num Deaths`,
-              xreg=cbind(trend, temp, temp2, 
-                         `Ozone` = train[, 'Ozone'],
-                         `Relative Humidity` = train[, 'Relative Humidity']))
-detach(as.data.frame(train))
-
-# Plot fitted values vs training data
-plot(train[,'Num Deaths'], ylab='Number of Deaths')
-lines(ts(fitted(fit), start=c(2002, 1), frequency=365), col='blue')
-
-# Plot residuals 
-plot(resid(fit)); abline(h=0, col='red', lwd=2)
-qqnorm(resid(fit)); qqline(resid(fit))
-invisible(acf2(resid(fit)))
-
-# Plot forecasts
-temp = test[,'Temperature'] - mean(test[,'Temperature'])
-temp2 = temp^2
-trend = time(temp)
-fcast <- forecast(fit, xreg=cbind(trend, temp, temp2, `Ozone` = test[, 'Ozone'], `Relative Humidity` = test[, 'Relative Humidity']), PI=T)
-
-fcast$x <- ts(fcast$x, start=c(2002, 1), frequency=365)
-fcast$mean = ts(fcast$mean, start=c(2006, 1), frequency=365)
-fcast$upper = ts(fcast$upper, start=c(2006, 1), frequency=365)
-fcast$lower = ts(fcast$lower, start=c(2006, 1), frequency=365)
-
-plot(train[,"Num Deaths"], xlim = c(2002, 2007))
-lines(test[,"Num Deaths"], col = "darkgrey")
-lines(fcast$upper[,2], col = "red", lty = 2)
-lines(fcast$lower[,2], col = "red", lty = 2)
-lines(fcast$mean, col = "red")
+  attach(as.data.frame(train))
+  temp = train[,'Temperature'] - mean(train[,'Temperature'])
+  temp2 = temp^2
+  trend = time(temp)
+  fit <- nnetar(`Num Deaths`,
+                xreg=cbind(trend, temp, temp2, 
+                           `Ozone` = train[, 'Ozone'],
+                           `Relative Humidity` = train[, 'Relative Humidity']))
+  detach(as.data.frame(train))
+  
+  # Plot fitted values vs training data
+  plot(train[,'Num Deaths'], ylab='Number of Deaths')
+  lines(ts(fitted(fit), start=c(2002, 1), frequency=365), col='blue')
+  
+  # Plot residuals 
+  plot(resid(fit)); abline(h=0, col='red', lwd=2)
+  qqnorm(resid(fit)); qqline(resid(fit))
+  invisible(acf2(resid(fit)))
+  
+  # Plot forecasts
+  temp = test[,'Temperature'] - mean(test[,'Temperature'])
+  temp2 = temp^2
+  trend = time(temp)
+  fcast <- forecast(fit, xreg=cbind(trend, temp, temp2, `Ozone` = test[, 'Ozone'], `Relative Humidity` = test[, 'Relative Humidity']), PI=T)
+  
+  fcast$x <- ts(fcast$x, start=c(2002, 1), frequency=365)
+  fcast$mean = ts(fcast$mean, start=c(2006, 1), frequency=365)
+  fcast$upper = ts(fcast$upper, start=c(2006, 1), frequency=365)
+  fcast$lower = ts(fcast$lower, start=c(2006, 1), frequency=365)
+  
+  plot(train[,"Num Deaths"], xlim = c(2002, 2007))
+  lines(test[,"Num Deaths"], col = "darkgrey")
+  lines(fcast$upper[,2], col = "red", lty = 2)
+  lines(fcast$lower[,2], col = "red", lty = 2)
+  lines(fcast$mean, col = "red")
+}
 ```
 
 ```{r model fitting results}
 ts_reg_func(train_2, test_2)
 var_func(train_2, test_2)
+nnetar_func(train_2, test_2)
 ```
 

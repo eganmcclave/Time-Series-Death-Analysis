@@ -472,6 +472,6 @@ nnetar_func <- function(train, test){
 ```{r model fitting results}
 ts_reg_func(train_2, test_2)
 var_func(train_2, test_2)
-nnetar_func(train_2, test_2)
+nnetar_func(train_1, test_1)
 ```
 

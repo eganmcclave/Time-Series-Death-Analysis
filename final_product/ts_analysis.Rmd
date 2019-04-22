@@ -25,12 +25,9 @@ colnames(df) <- c('Date', 'Ozone', 'Temperature', 'Relative Humidity', 'Num Deat
 ts_vars <- ts(with(df, cbind(Ozone, Temperature, `Relative Humidity`, `Num Deaths`)),
               start=c(2002, 1), frequency=365)
 
-# Formulate training/testing splits where testing is 1 year or 6 months
-train_1 <- window(ts_vars, start=c(2002, 1), end=c(2005, 365))
-test_1 <- window(ts_vars, start=c(2006, 1), end=c(2007, 1))
-
-train_2 <- window(ts_vars, start=c(2002, 1), end=c(2006, 365/2))
-test_2 <- window(ts_vars, start=c(2006, 365/2), end=c(2007, 1))
+# Formulate training/testing split where testing is 1 year
+train <- window(ts_vars, start=c(2002, 1), end=c(2005, 365))
+test <- window(ts_vars, start=c(2006, 1), end=c(2007, 1))
 
 # Cache chunk options
 opts_chunk$set(cache=T, autodep=T, cache.comments=F)
@@ -348,73 +345,72 @@ par(mfrow=c(1,1))
 
 <!-- Model Fitting -->
 
-```{r model fitting functions}
+```{r model fitting 1}
 # Time series regression model
-ts_reg_func <- function(train, test) {
-  
-  # Training portion
-  attach(as.data.frame(train))
-  temp = train[,'Temperature'] - mean(train[,'Temperature'])
-  temp2 = temp^2
-  trend = time(temp)
-  
-  # fit1 = lm(`Num Deaths` ~ trend + temp + temp2 + train[,'Ozone'] + train[,'Relative Humidity'])
-  # plot(resid(fit1)); abline(h=0, col='red', lwd=2)
-  # qqnorm(resid(fit1)); qqline(resid(fit1))
-  # invisible(acf2(resid(fit1), 365))
-  
-  # fit2 = arima(`Num Deaths`, order=c(4, 0, 14), 
-  #   xreg=cbind(trend, temp, temp2, Ozone=train[,'Ozone'], `Relative Humidity`=train[,'Relative Humidity']))
-  #   #sarima(ts_vars[,'Num Deaths'], p=1, d=0, q=1, xreg = cbind(trend, temp, temp2, `Ozone, `Relative Humidity`))
-  # plot(resid(fit2), type='l'); abline(h=0, col='red', lwd=2)
-  # qqnorm(resid(fit2)); qqline(resid(fit2))
-  # invisible(acf2(resid(fit2), 365))
-  
-  fit3 = auto.arima(`Num Deaths`, 
-    xreg=cbind(trend, temp, temp2, Ozone=train[,'Ozone'], `Relative Humidity`=train[,'Relative Humidity']),
-    seasonal=T, stepwise=F, approximation=F)
-  plot(resid(fit3)); abline(h=0, col='red', lwd=2)
-  qqnorm(resid(fit3)); qqline(resid(fit3))
-  invisible(acf2(resid(fit3), 365))
-  detach(as.data.frame(train))
-  
-  # Testing portion
-  temp = test[,'Temperature'] - mean(test[,'Temperature'])
-  temp2 = temp^2
-  trend = time(temp)
+# Training portion
+attach(as.data.frame(train))
+temp = train[,'Temperature'] - mean(train[,'Temperature'])
+temp2 = temp^2
+trend = time(temp)
 
-  fcast <- forecast(fit3, xreg=cbind(trend, temp, temp2, Ozone=test[,'Ozone'], `Relative Humidity`=test[,'Relative Humidity']))
+fit1 = lm(`Num Deaths` ~ trend + temp + temp2 + train[,'Ozone'] + train[,'Relative Humidity'])
+plot(resid(fit1)); abline(h=0, col='red', lwd=2)
+qqnorm(resid(fit1)); qqline(resid(fit1))
+invisible(acf2(resid(fit1), 365))
 
-  fcast$x <- ts(fcast$x, start=c(2002, 1), frequency=365)
-  fcast$mean = ts(fcast$mean, start=c(min(time(test)) %/% 1, min(time(test)) %% 1), frequency=365)
-  fcast$upper = ts(fcast$upper, start=c(min(time(test)) %/% 1, min(time(test)) %% 1), frequency=365)
-  fcast$lower = ts(fcast$lower, start=c(min(time(test)) %/% 1, min(time(test)) %% 1), frequency=365)
+# order=c(4,0,14), c(3,0,8)
+fit2 = Arima(`Num Deaths`, order=c(3, 0, 8),
+  xreg=cbind(trend, temp, temp2, Ozone=train[,'Ozone'], `Relative Humidity`=train[,'Relative Humidity']),
+  optim.control=list(maxit=1000))
+  #sarima(ts_vars[,'Num Deaths'], p=1, d=0, q=1, xreg = cbind(trend, temp, temp2, `Ozone, `Relative Humidity`))
+plot(resid(fit2)); abline(h=0, col='red', lwd=2)
+qqnorm(resid(fit2)); qqline(resid(fit2))
+invisible(acf2(resid(fit2), 365))
 
-  plot(fcast)
-  lines(test[,'Num Deaths'], col='red')
-}
+fit3 = auto.arima(`Num Deaths`, 
+  xreg=cbind(trend, temp, temp2, Ozone=train[,'Ozone'], `Relative Humidity`=train[,'Relative Humidity']),
+  seasonal=T, stepwise=F, approximation=F, optim.control=list(maxit=1000))
+plot(resid(fit3)); abline(h=0, col='red', lwd=2)
+qqnorm(resid(fit3)); qqline(resid(fit3))
+invisible(acf2(resid(fit3), 365))
+detach(as.data.frame(train))
 
-# Basic VAR(p) model
-var_func <- function(train, test) {
-  # Calculate Information Criteria for different VAR(p) models
-  VARselect_res <- VARselect(train, season=365, type='none')
-  
-  ### Determining VAR model based on VARselect_res
-  var_res <- vars::VAR(train, p=min(VARselect_res$selection), season=365, type='none')
-  
-  # Display fitted values and original series
-  temp_plot(train, other=ts(fitted(var_res), start=c(2002, 1), frequency=365),
-    other_col='blue', main='')
-  
-  plot(forecast(var_res, h=nrow(test)))
-  
-  # Display ACF/CCF plots
-  acf(resid(var_res), lag.max=365)
-}
+# Testing portion
+temp = test[,'Temperature'] - mean(test[,'Temperature'])
+temp2 = temp^2
+trend = time(temp)
+
+#fcast <- forecast(fit2, xreg=cbind(trend, temp, temp2, Ozone=test[,'Ozone'], `Relative Humidity`=test[,'Relative Humidity']))
+fcast <- forecast(fit3, xreg=cbind(trend, temp, temp2, Ozone=test[,'Ozone'], `Relative Humidity`=test[,'Relative Humidity']))
+fcast$x <- ts(fcast$x, start=c(2002, 1), frequency=365)
+fcast$mean = ts(fcast$mean, start=c(2006, 1), frequency=365)
+fcast$upper = ts(fcast$upper, start=c(2006, 1), frequency=365)
+fcast$lower = ts(fcast$lower, start=c(2006, 1), frequency=365)
+
+plot(train[,"Num Deaths"], ylab='Number of Deaths', 
+     xlim = c(2002, 2007), ylim=range(fcast$lower, fcast$upper, ts_vars[,'Num Deaths']))
+lines(test[,"Num Deaths"], col = "darkgrey")
+lines(fcast$upper[,2], col = "red", lty = 2)
+lines(fcast$lower[,2], col = "red", lty = 2)
+lines(fcast$mean, col = "red")
 ```
 
-```{r model fitting results}
-ts_reg_func(train_2, test_2)
-var_func(train_2, test_2)
+```{r model fitting 2}
+# Basic VAR(p) model
+
+# Calculate Information Criteria for different VAR(p) models
+VARselect_res <- VARselect(train, season=365, type='none')
+
+### Determining VAR model based on VARselect_res
+var_res <- vars::VAR(train, p=min(VARselect_res$selection), season=365, type='none')
+
+# Display fitted values and original series
+temp_plot(train, other=ts(fitted(var_res), start=c(2002, 1), frequency=365),
+  other_col='blue', main='')
+
+plot(forecast(var_res, h=nrow(test)))
+
+# Display ACF/CCF plots
+acf(resid(var_res), lag.max=365)
 ```
 

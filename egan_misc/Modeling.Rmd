@@ -51,14 +51,7 @@ ts_reg <- function(train, test) {
   qqnorm(resid(fit3)); qqline(resid(fit3))
   invisible(acf2(resid(fit3), 365))
   detach(as.data.frame(train))
-  
-  # Testing portion
-  attach(as.data.frame(test))
-  
-  
-  
-  detach(as.data.frame(test))
-}
+  }
 
 plot(`Temperature`, `Num Deaths`)
 xvals = seq(min(`Temperature`), max(`Temperature`) + 1)
@@ -108,9 +101,25 @@ acf(resid(var_res), lag.max=365)
 ```
 
 ```{r}
+lm_1 <- Mlm(ts_vars[,1:3], ts_vars[,4])
+MTS::VARorder(resid(lm_1))
+fit <- REGts(ts_vars[,1:3], 4, ts_vars[,4])
+#fit <- refREGts(fit, thres=1)
+MTSdiag(fit)
+```
+
+```{r}
 # seasonal varma model
+par(mfrow=c(1,4))
+acfs <- apply(ts_vars, 2, acf, main='')
+acfs_diff <- apply(diff(ts_vars, 30), 2, acf, main='')
+
+pacfs <- apply(ts_vars, 2, pacf, main='')
+pacfs_diff <- apply(diff(ts_vars, 30), 2, pacf, main='')
+par(mfrow=c(1,1))
+
 #MTS::sVARMACpp()
-fit4 <- MTS::sVARMACpp(ts_vars, c(1, 0, 1), c(3, 0, 9), s=365)
+fit4 <- MTS::sVARMA(ts_vars, c(1, 0, 1), c(3, 0, 9), s=365)
 ```
 
 

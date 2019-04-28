@@ -21,10 +21,6 @@ cols <- c('#000000', '#999999', '#E69F00', '#56B4E9', '#009E73',
 df <- read.dta('../data/ije-2012-10-0989-File003.dta')
 colnames(df) <- c('Date', 'Ozone', 'Temperature', 'Relative Humidity', 'Num Deaths')
 
-df %<>%
-  mutate(`Adjusted Temperature` = Temperature - mean(Temperature),
-         `(Adjusted Temperature)^2` = `Adjusted Temperature`^2)
-
 # Combine the series into a ts object with appropriate time series labeling
 ts_vars <- ts(df[,2:5], start=c(2002, 1), frequency=365.25)
 
@@ -128,7 +124,7 @@ temp_plot <- function (x, y = NULL, plot.type = c('multiple', 'single'), xy.labe
             if (missing(xy.labels)) xy.labels <- (n <= 150)
             do.lab <- if (is.logical(xy.labels)) xy.labels
             else {
-                if (!is.character(xy.labels)) stop(''xy.labels' must be logical or character')
+                if (!is.character(xy.labels)) stop("'xy.labels' must be logical or character")
                 TRUE
             }
             ptype <- if (do.lab) 'n'
@@ -335,36 +331,41 @@ pairs(ts_vars, cex=0.75, pch=16)
 # ACF/PACF plots
 par(mfrow=c(1,4))
 acfs <- apply(ts_vars, 2, acf, main='')
-acfs_diff <- apply(diff(ts_vars, 365), 2, acf, main='')
+acfs_diff <- apply(diff(ts_vars, 365.25), 2, acf, main='')
 
 pacfs <- apply(ts_vars, 2, pacf, main='')
-pacfs_diff <- apply(diff(ts_vars, 365), 2, pacf, main='')
+pacfs_diff <- apply(diff(ts_vars, 365.25), 2, pacf, main='')
 par(mfrow=c(1,1))
 
 # Decomposed plots
 ## seasonal
 seasonal = lapply(df[,2:5], function(x, vars) {
-  x <- ts(x, start=c(2002, 1), frequency=365)
+  x <- ts(x, start=c(2002, 1), frequency=365.25)
   temp <- decompose(x)
   return(temp$seasonal)
   })
 
-plot.ts(do.call(cbind, seasonal), main = 'Decomposed Seasonality Series for London (2002-2007)')
+plot.ts(do.call(cbind, seasonal), main='Decomposed Seasonality Series for London (2002-2007)')
 ## trend
 trend = lapply(df[,2:5], function(x, vars) {
-  x <- ts(x, start=c(2002, 1), frequency=365)
+  x <- ts(x, start=c(2002, 1), frequency=365.25)
   temp <- decompose(x)
   return(temp$trend)
   })
-plot.ts(do.call(cbind, trend), main = 'Decomposed Trend Series for London (2002-2007)')
+plot.ts(do.call(cbind, trend), main='Decomposed Trend Series for London (2002-2007)')
 ```
 
 ```{r}
 # Variable transformation indicated by EDA
-ts_vars <- ts(df[,c(2,6:7,4:5)], start=c(2002, 1), frequency=365.25)
+df %<>%
+  mutate(`Adjusted Temperature` = Temperature - mean(Temperature),
+         `(Adjusted Temperature)^2` = `Adjusted Temperature`^2,
+         `Day of Week` = lubridate::wday(Date))
+
+ts_vars <- ts(df[,c(2,6:7,4:5,8)], start=c(2002, 1), frequency=365.25)
 
 # Formulate training/testing split where testing is 1 year
-train <- window(ts_vars, start=c(2002, 1), end=c(2005, 365))
+train <- window(ts_vars, start=c(2002, 1), end=c(2005, 365.25))
 test <- window(ts_vars, start=c(2006, 1))
 ```
 
@@ -384,7 +385,7 @@ plot(resid(ts_reg_1), ylab='Residuals', cex=0.75)
 abline(h=0, col='red', lwd=2)
 qqnorm(resid(ts_reg_1)); qqline(resid(ts_reg_1))
 
-invisible(acf2(resid(ts_reg_1), 365, main=''))
+invisible(acf2(resid(ts_reg_1), 365.25, main=''))
 
 ###############################################################################
 
@@ -393,7 +394,6 @@ bind <- cbind(trend, temp=train[,'Adjusted Temperature'], temp2=train[,'(Adjuste
 
 # order=c(4,0,14), c(2,0,8)
 ts_reg_2 = Arima(train[,'Num Deaths'], order=c(2, 0, 8), xreg=bind, optim.control=list(maxit=1000))
-  #sarima(ts_vars[,'Num Deaths'], p=1, d=0, q=1, xreg = cbind(trend, temp, temp2, `Ozone, `Relative Humidity`))
 plot(train[,'Num Deaths'], ylab='Number of Deaths')
 lines(fitted(ts_reg_2), col='blue')
 legend('topright', c('Original Data', 'Fitted Values'), lty=c(1,1), col=c(1,'blue'))
@@ -402,13 +402,13 @@ plot(resid(ts_reg_2), ylab='Residuals', type='p', cex=0.75)
 abline(h=0, col='red', lwd=2)
 qqnorm(resid(ts_reg_2)); qqline(resid(ts_reg_2))
 
-invisible(acf2(resid(ts_reg_2), 365, main=''))
+invisible(acf2(resid(ts_reg_2), 365.25, main=''))
 
 ###############################################################################
 
 ts_reg_3 = auto.arima(train[, 'Num Deaths'], xreg=bind, seasonal=T, 
   stepwise=F, approximation=F, optim.control=list(maxit=1000))
-plot(train[,'Num Deaths'], ylab='Number of Deaths')
+plot(train[, 'Num Deaths'], ylab='Number of Deaths')
 lines(fitted(ts_reg_3), col='blue')
 legend('topright', c('Original Data', 'Fitted Values'), lty=c(1,1), col=c(1,'blue'))
 
@@ -416,23 +416,23 @@ plot(resid(ts_reg_3), type='p', cex=0.75)
 abline(h=0, col='red', lwd=2)
 qqnorm(resid(ts_reg_3)); qqline(resid(ts_reg_3))
 
-invisible(acf2(resid(ts_reg_3), 365, main=''))
+invisible(acf2(resid(ts_reg_3), 365.25, main=''))
 
 ###############################################################################
 
 ###### Testing portion
 trend = time(test)
-bind <- cbind(trend, temp=test[,'Adjusted Temperature'], temp2=test[,'(Adjusted Temperature)^2'], 
-  Ozone=test[,'Ozone'], `Relative Humidity`=test[,'Relative Humidity'])
+bind <- cbind(trend, temp=test[, 'Adjusted Temperature'], temp2=test[, '(Adjusted Temperature)^2'], 
+  Ozone=test[, 'Ozone'], `Relative Humidity`=test[,'Relative Humidity'])
 
 fcast <- forecast(ts_reg_2, xreg=bind)
 fcast$x <- ts(fcast$x, start=c(2002, 1), frequency=365)
-fcast$mean = ts(fcast$mean, start=c(2006, 1), frequency=365)
-fcast$upper = ts(fcast$upper, start=c(2006, 1), frequency=365)
-fcast$lower = ts(fcast$lower, start=c(2006, 1), frequency=365)
+fcast$mean <- ts(fcast$mean, start=c(2006, 1), frequency=365)
+fcast$upper <- ts(fcast$upper, start=c(2006, 1), frequency=365)
+fcast$lower <- ts(fcast$lower, start=c(2006, 1), frequency=365)
 
-plot(train[, 'Num Deaths'], ylab='Number of Deaths', 
-  xlim = c(2002, 2007), ylim=range(fcast$lower, fcast$upper, ts_vars[, 'Num Deaths']))
+plot(train[, 'Num Deaths'], ylab='Number of Deaths', xlim = c(2002, 2007), 
+  ylim=range(fcast$lower, fcast$upper, ts_vars[, 'Num Deaths']))
 lines(test[, 'Num Deaths'], col = 'darkgrey')
 lines(fcast$upper[,2], col = 'red', lty = 2)
 lines(fcast$lower[,2], col = 'red', lty = 2)
@@ -444,12 +444,12 @@ legend('topright', c('Training Data', 'Validation Data', 'Point Estimates', '...
 
 fcast <- forecast(ts_reg_3, xreg=bind)
 fcast$x <- ts(fcast$x, start=c(2002, 1), frequency=365)
-fcast$mean = ts(fcast$mean, start=c(2006, 1), frequency=365)
-fcast$upper = ts(fcast$upper, start=c(2006, 1), frequency=365)
-fcast$lower = ts(fcast$lower, start=c(2006, 1), frequency=365)
+fcast$mean <- ts(fcast$mean, start=c(2006, 1), frequency=365)
+fcast$upper <- ts(fcast$upper, start=c(2006, 1), frequency=365)
+fcast$lower <- ts(fcast$lower, start=c(2006, 1), frequency=365)
 
-plot(train[, 'Num Deaths'], ylab='Number of Deaths', 
-  xlim = c(2002, 2007), ylim=range(fcast$lower, fcast$upper, ts_vars[, 'Num Deaths']))
+plot(train[, 'Num Deaths'], ylab='Number of Deaths', xlim=c(2002, 2007), 
+  ylim=range(fcast$lower, fcast$upper, ts_vars[, 'Num Deaths']))
 lines(test[, 'Num Deaths'], col = 'darkgrey')
 lines(fcast$upper[,2], col = 'red', lty = 2)
 lines(fcast$lower[,2], col = 'red', lty = 2)
@@ -459,10 +459,14 @@ legend('topright', c('Training Data', 'Validation Data', 'Point Estimates', '...
 
 ###############################################################################
 
-sims <- replicate(10, 
+# Comparing simulations to observed data
+# Calculate 100 simulations
+sims <- replicate(100, 
   with(ts_reg_3, arima.sim(list(ar=coef[1], ma=coef[2], sd=sqrt(sigma2)), n=nrow(ts_vars))))
 sims <- ts(sims, start=c(2002, 1), frequency=365.25)
-plot(ts_vars[,'Num Deaths'], col='black', ylab='Number of Deaths')
+
+# Plot simulated and original data
+plot(ts_vars[, 'Num Deaths'], col='black', ylab='Number of Deaths')
 ts.plot(sims, col=1:10, lwd=0.5)
 
 ###############################################################################
@@ -479,69 +483,127 @@ xt <- xtable(tab, caption='Time Series Estimated Coefficients', label='tab:ts_re
 print(xt, scalebox=0.75, include.colnames = F)
 ```
 
-```{r model fitting 2}
-### Training website
-# Basic VAR(p) model
-temp = train[,'Temperature'] - mean(train[,'Temperature'])
-temp2 = temp^2
-trend = time(temp)
+```{r}
+#####################################
+#### Vector autoregressive model ####
+#####################################
+
+train_var <- train[,c('Ozone', 'Adjusted Temperature', '(Adjusted Temperature)^2', 'Relative Humidity', 'Num Deaths')]
+
+###### Training portion
+trend <- time(train_var)
+bind <- cbind(trend, wday=train[,'Day of Week'])
 
 # Calculate Information Criteria for different VAR(p) models
-VARselect_res <- VARselect(train[,c('Ozone', 'Relative Humidity', 'Num Deaths')], 
-  season=365, exogen=cbind(trend, temp, temp2), type='none')
+VARselect_res_1 <- VARselect(train_var, season=NULL, exogen=bind, type='none')
 
 # Determining VAR model based on VARselect_res
-fit <- vars::VAR(train, p=min(VARselect_res$selection), 
-  season=365, exogen=cbind(trend, temp, temp2), type='none')
+var_fit_1 <- vars::VAR(train_var, p=min(VARselect_res_1$selection), 
+  season=NULL, exogen=bind, type='none')
 
 # Display fitted values and original series
-temp_plot(train, other=ts(fitted(fit), start=c(2002, 1), frequency=365),
-  other_col='blue', main='')
+ts_fitted <- ts(fitted(var_fit_1), start=c(2002, 1), frequency=365.25)
+temp_plot(train_var, other=ts_fitted, other_col='blue', main='')
 
 # Display residuals over time
-temp_plot(ts(resid(fit), start=c(2002, 1), frequency=365),
-          other=ts(matrix(0, ncol=4, nrow=nrow(train)), start=c(2002,1), frequency=365), 
-          other_col='red', main='')
+ts_resid <- ts(resid(var_fit_1), start=c(2002, 1), frequency=365.25)
+colnames(ts_resid) <- colnames(train_var)
+ts_line <- ts(matrix(0, ncol=ncol(train_var), nrow=nrow(train)), start=c(2002,1), frequency=365.25)
+temp_plot(ts_resid, other=ts_line, other_col='red', main='')
 
 # Display ACF/CCF plots
-acf(resid(fit), lag.max=365)
+acf(ts_resid, lag.max=365.25, mar=c(2.85, 2.5, 2, 0.25))
 
-### Testing website
-temp = test[,'Temperature'] - mean(test[,'Temperature'])
-temp2 = temp^2
-trend = time(temp)
+###############################################################################
 
-# Display all forecasts
-plot(fcast <- predict(fit, n.ahead=nrow(test), dumvar=cbind(trend, temp, temp2)))
+VARselect_res_2 <- VARselect(train_var, season=365, exogen=bind, type='none')
+
+# Determining VAR model based on VARselect_res
+var_fit_2 <- vars::VAR(train_var, p=min(VARselect_res_2$selection), 
+  season=365, exogen=bind, type='none')
+
+# Display fitted values and original series
+ts_fitted <- ts(fitted(var_fit_2), start=c(2002, 1), frequency=365.25)
+temp_plot(train_var, other=ts_fitted, other_col='blue', main='')
+
+# Display residuals over time
+ts_resid <- ts(resid(var_fit_2), start=c(2002, 1), frequency=365.25)
+colnames(ts_resid) <- colnames(train_var)
+ts_line <- ts(matrix(0, ncol=ncol(train_var), nrow=nrow(train)), start=c(2002,1), frequency=365.25)
+temp_plot(ts_resid, other=ts_line, other_col='red', main='')
+
+# Display ACF/CCF plots
+acf(ts_resid, lag.max=365.25, mar=c(2.85, 2.5, 2, 0.25))
+
+###############################################################################
+
+###### Testing portion
+trend = time(test)
+bind <- cbind(trend, wday=test[,'Day of Week'])
+
+fcast <- predict(var_fit_1, n.ahead=nrow(test), dumvar=bind)
+names(fcast$fcst) <- colnames(train_var)
+colnames(fcast$endog) <- colnames(train_var)
+plot(fcast)
+
 plot(train[, 'Num Deaths'], ylab='Number of Deaths', xlim = c(2002, 2007), 
-     ylim=range(fcast$forecast$Num.Deaths$lower, fcast$forecast$Num.Deaths$upper, ts_vars[, 'Num Deaths']))
+  ylim=range(fcast$fcst$`Num Deaths`[, 1:3], ts_vars[, 'Num Deaths']))
 lines(test[, 'Num Deaths'], col='darkgrey')
 
-fcast$fcst$Num.Deaths <- ts(fcast$fcst$Num.Deaths, start=c(2006, 1), frequency=365)
-lines(fcast$fcst$Num.Deaths[,2], col='red', lty=2)
-lines(fcast$fcst$Num.Deaths[,1], col='red')
-lines(fcast$fcst$Num.Deaths[,3], col='red', lty=2)
+fcast$fcst$`Num Deaths` <- ts(fcast$fcst$`Num Deaths`, start=c(2006, 1), frequency=365.25)
+lines(fcast$fcst$`Num Deaths`[,2], col='red', lty=2)
+lines(fcast$fcst$`Num Deaths`[,1], col='red')
+lines(fcast$fcst$`Num Deaths`[,3], col='red', lty=2)
+legend('topright', c('Training Data', 'Validation Data', 'Point Estimates', '95% CI'),
+  col=c(1, 'grey', 'red', 'red'), lty=c(1,1,1,2), cex=0.75)
 
-# # Display forecast for response variable
-# fcast$forecast$Num.Deaths$x <- ts(fcast$forecast$Num.Deaths$x, start=c(2002, 1), frequency=365)
-# fcast$forecast$Num.Deaths$mean = ts(fcast$forecast$Num.Deaths$mean, start=c(2006, 1), frequency=365)
-# fcast$forecast$Num.Deaths$upper = ts(fcast$forecast$Num.Deaths$upper, start=c(2006, 1), frequency=365)
-# fcast$forecast$Num.Deaths$lower = ts(fcast$forecast$Num.Deaths$lower, start=c(2006, 1), frequency=365)
-# 
-# plot(train[, 'Num Deaths'], ylab='Number of Deaths', xlim = c(2002, 2007), 
-#      ylim=range(fcast$forecast$Num.Deaths$lower, fcast$forecast$Num.Deaths$upper, ts_vars[, 'Num Deaths']))
-# lines(test[, 'Num Deaths'], col='darkgrey')
-# lines(fcast$forecast$Num.Deaths$upper[,2], col = 'red', lty = 2)
-# lines(fcast$forecast$Num.Deaths$lower[,2], col = 'red', lty = 2)
-# lines(fcast$forecast$Num.Deaths$mean, col = 'red')
+###############################################################################
+
+fcast <- predict(var_fit_2, n.ahead=nrow(test), dumvar=bind)
+names(fcast$fcst) <- colnames(train_var)
+colnames(fcast$endog) <- colnames(train_var)
+plot(fcast)
+
+plot(train[, 'Num Deaths'], ylab='Number of Deaths', xlim = c(2002, 2007), 
+  ylim=range(fcast$fcst$`Num Deaths`[, 1:3], ts_vars[, 'Num Deaths']))
+lines(test[, 'Num Deaths'], col='darkgrey')
+
+fcast$fcst$`Num Deaths` <- ts(fcast$fcst$`Num Deaths`, start=c(2006, 1), frequency=365.25)
+lines(fcast$fcst$`Num Deaths`[,2], col='red', lty=2)
+lines(fcast$fcst$`Num Deaths`[,1], col='red')
+lines(fcast$fcst$`Num Deaths`[,3], col='red', lty=2)
+legend('topright', c('Training Data', 'Validation Data', 'Point Estimates', '95% CI'),
+  col=c(1, 'grey', 'red', 'red'), lty=c(1,1,1,2), cex=0.75)
+
+###############################################################################
 
 # Coefficient estimates
-names(coef(fit))
-coefs <- do.call(cbind, coef(fit))
-#tab <- coefs[1:16, rep(1:2, 4) + rep(seq(0, 12, by=4), each=2)]
+tab <- coef(var_fit_1)$`Num.Deaths`
+rownames(tab) <- c(paste0(rep(colnames(train_var), 3), 
+  ' lag ', rep(1:3, each=ncol(train_var))), 'trend', 'Day of Week')
+tab <- coefs[1:16, rep(1:2, 4) + rep(seq(0, 12, by=4), each=2)]
 tab <- coefs[1:16, 13:16]
 xt <- xtable(tab, digits=c(0, 3, 3, 3, -2), caption='VAR(4) Coefficients', label='tab:var_coef')
-#print(xt, scalebox=0.75)
+print(xt, scalebox=0.75)
+
+#do.call(cbind, lapply(var_fit_1$varresult, coef))
+```
+
+```{r}
+plot(fcast <- forecast(var_fit, h=nrow(test)))
+
+# Display forecast for response variable
+fcast$forecast$Num.Deaths$x <- ts(fcast$forecast$Num.Deaths$x, start=c(2002, 1), frequency=365)
+fcast$forecast$Num.Deaths$mean = ts(fcast$forecast$Num.Deaths$mean, start=c(2006, 1), frequency=365)
+fcast$forecast$Num.Deaths$upper = ts(fcast$forecast$Num.Deaths$upper, start=c(2006, 1), frequency=365)
+fcast$forecast$Num.Deaths$lower = ts(fcast$forecast$Num.Deaths$lower, start=c(2006, 1), frequency=365)
+
+plot(train[, 'Num Deaths'], ylab='Number of Deaths', xlim = c(2002, 2007),
+     ylim=range(fcast$forecast$Num.Deaths$lower, fcast$forecast$Num.Deaths$upper, ts_vars[, 'Num Deaths']))
+lines(test[, 'Num Deaths'], col='darkgrey')
+lines(fcast$forecast$Num.Deaths$upper[,2], col = 'red', lty = 2)
+lines(fcast$forecast$Num.Deaths$lower[,2], col = 'red', lty = 2)
+lines(fcast$forecast$Num.Deaths$mean, col = 'red')
 ```
 
 ```{r model fitting 3}
@@ -557,7 +619,7 @@ detach(as.data.frame(train))
 
 # Plot fitted values vs training data
 plot(train[,'Num Deaths'], ylab='Number of Deaths')
-lines(ts(fitted(fit), start=c(2002, 1), frequency=365), col='blue')
+lines(ts(fitted(fit), start=c(2002, 1), frequency=365.25), col='blue')
 
 # Plot residuals over time
 plot(resid(fit)); abline(h=0, col='red', lwd=2)
@@ -566,7 +628,7 @@ plot(resid(fit)); abline(h=0, col='red', lwd=2)
 qqnorm(resid(fit)); qqline(resid(fit))
 
 # Plot ACF/PACFk
-invisible(acf2(resid(fit), 365))
+invisible(acf2(resid(fit), 365.25))
 
 # Display forecast for response variable
 temp = test[,'Temperature'] - mean(test[,'Temperature'])
@@ -574,10 +636,10 @@ temp2 = temp^2
 trend = time(temp)
 fcast <- forecast(fit, xreg=cbind(trend, temp, temp2, `Ozone` = test[, 'Ozone'], `Relative Humidity` = test[, 'Relative Humidity']), PI=T)
 
-fcast$x <- ts(fcast$x, start=c(2002, 1), frequency=365)
-fcast$mean = ts(fcast$mean, start=c(2006, 1), frequency=365)
-fcast$upper = ts(fcast$upper, start=c(2006, 1), frequency=365)
-fcast$lower = ts(fcast$lower, start=c(2006, 1), frequency=365)
+fcast$x <- ts(fcast$x, start=c(2002, 1), frequency=365.25)
+fcast$mean = ts(fcast$mean, start=c(2006, 1), frequency=365.25)
+fcast$upper = ts(fcast$upper, start=c(2006, 1), frequency=365.25)
+fcast$lower = ts(fcast$lower, start=c(2006, 1), frequency=365.25)
 
 plot(train[,'Num Deaths'], xlim = c(2002, 2007))
 lines(test[,'Num Deaths'], col = 'darkgrey')

@@ -1,0 +1,28 @@
+data_summary	tab	t	apply	ts_vars	summary	xt	xtable	print
+overall	plot.ts	ts_vars	seasonal	lapply	df	x	ts	c	temp	decompose	return	do.call	cbind
+pairs	pairs	ts_vars
+cf_plot_1	acf	ts_vars	c
+cf_plot_2	pacf	ts_vars	c
+transform_1	df	%<>%	mutate	Temperature	mean	`Adjusted Temperature`	wday	Date	mday	ts_vars	ts	c	train	window	test	train_trend	time	test_trend	results	matrix	list
+ts_1	ts_reg_1	lm	train	train_trend	plot	resid	abline	qqnorm	qqline
+ts_2	invisible	acf2	resid	ts_reg_1
+var_1	train_var	train	c	bind	cbind	train_trend	VARselect_res_1	VARselect	VARselect_res_2	selection	rbind	rownames	paste0	xt	xtable	print
+ts_3	bind	cbind	train_trend	train	ts_reg_2	Arima	c	list	plot	lines	fitted	legend	resid	abline
+ts_4	ts_reg_3	auto.arima	train	bind	T	F	list	plot	lines	fitted	legend	c	resid	abline
+ts_5	qqnorm	resid	ts_reg_2	qqline	invisible	acf2
+ts_6	qqnorm	resid	ts_reg_3	qqline	invisible	acf2
+ts_7	bind	cbind	test_trend	test	fcast	forecast	ts_reg_3	plot	train	c	range	lower	upper	ts_vars	lines	mean	legend
+ts_9	output	capture.output	ts_reg_3	strsplit	cbind	do.call	rbind	tab	apply	c	as.numeric	rownames	colnames	ts_vars	xt	xtable	print	x	results	AIC	mean	test	fcast
+var_2	bind	cbind	train_trend	train	var_fit_1	VAR	train_var	min	selection	ts_fitted	ts	fitted	c	temp_plot	ts_resid_1	resid	colnames	ts_line	matrix	ncol	nrow
+var_3	var_fit_2	VAR	train_var	min	selection	bind	ts_fitted	ts	fitted	c	temp_plot	ts_resid_2	resid	colnames	ts_line	matrix	ncol	nrow	train
+var_4	acf	ts_resid_1	c	ts_resid_2
+var_5	bind	cbind	test_trend	test	fcast	predict	var_fit_1	nrow	names	fcst	colnames	train_var	endog	plot	train	c	range	`Num Deaths`	ts_vars	lines	ts	legend	results	AIC	mean	var_fit_2
+var_6	tab	coef	var_fit_1	`Num.Deaths`	temp_names	colnames	train_var	rownames	c	paste0	rep	ncol	xt	xtable	print	x
+nn_1	bind	cbind	train_trend	train	attach	as.data.frame	fit	nnetar	`Num Deaths`	detach	plot	lines	ts	fitted	c	legend	resid	abline
+nn_2	qqnorm	resid	fit	qqline	invisible	acf2
+nn_3	bind	cbind	test_trend	test	fcast	forecast	fit	T	x	ts	c	mean	upper	lower	plot	train	lines	legend	results
+nn_4	trend	time	ts_vars	bind	cbind	sims	replicate	simulate	fit	nrow	plot	ts.plot
+cf_plot	acf	ts_vars	c	pacf
+results	xt	xtable	results	print	x
+prelim	pkgs	c	lapply	library	T	cols	df	read.dta	colnames	ts_vars	ts	opts_chunk	set	F	source
+ccf_plot	

@@ -1,0 +1,6 @@
+\select@language {english}
+\contentsline {table}{\numberline {1}{\ignorespaces Summary Statistics for Individual Time Series\relax }}{1}{table.caption.4}
+\contentsline {table}{\numberline {2}{\ignorespaces \texttt {VARselect()} Order Selection for Different Models\relax }}{8}{table.caption.10}
+\contentsline {table}{\numberline {3}{\ignorespaces Time Series Estimated Coefficients\relax }}{13}{table.caption.20}
+\contentsline {table}{\numberline {4}{\ignorespaces \texttt {Num Deaths} Coefficients from VAR(3)\relax }}{17}{table.caption.29}
+\contentsline {table}{\numberline {5}{\ignorespaces Evaluation Results Across all Models\relax }}{21}{table.caption.37}

@@ -1,0 +1,47 @@
+\select@language {english}
+\contentsline {figure}{\numberline {1}{\ignorespaces Visualizing Individual Time Series for London (2002 - 2007)}}{2}{figure.caption.5}
+\contentsline {subfigure}{\numberline {(a)}{\ignorespaces {Overall Series}}}{2}{subfigure.1.1}
+\contentsline {subfigure}{\numberline {(b)}{\ignorespaces {Decomposed Seasonality Component}}}{2}{subfigure.1.2}
+\contentsline {figure}{\numberline {2}{\ignorespaces Pairs Plot of all Variables}}{3}{figure.caption.6}
+\contentsline {figure}{\numberline {3}{\ignorespaces Auto-Correlation Plots of Individual Series}}{4}{figure.caption.7}
+\contentsline {subfigure}{\numberline {(a)}{\ignorespaces {ACF/CCF Plots of Individual Series}}}{4}{subfigure.3.1}
+\contentsline {subfigure}{\numberline {(b)}{\ignorespaces {PACF/PCCF Plots of Individual Series}}}{4}{subfigure.3.2}
+\contentsline {figure}{\numberline {4}{\ignorespaces Visualizing Residuals}}{6}{figure.caption.8}
+\contentsline {subfigure}{\numberline {(a)}{\ignorespaces {Residuals over Time}}}{6}{subfigure.4.1}
+\contentsline {subfigure}{\numberline {(b)}{\ignorespaces {Residual QQ Plot}}}{6}{subfigure.4.2}
+\contentsline {figure}{\numberline {5}{\ignorespaces ACF/PACF Plot of Residuals}}{7}{figure.caption.9}
+\contentsline {figure}{\numberline {6}{\ignorespaces Visualizing ARIMA Fit}}{9}{figure.caption.12}
+\contentsline {subfigure}{\numberline {(a)}{\ignorespaces {Fitted Values vs Original Series}}}{9}{subfigure.6.1}
+\contentsline {subfigure}{\numberline {(b)}{\ignorespaces {Residuals over Time}}}{9}{subfigure.6.2}
+\contentsline {figure}{\numberline {7}{\ignorespaces Visualizing \texttt {auto.arima} Fit\relax }}{9}{figure.caption.13}
+\contentsline {subfigure}{\numberline {(a)}{\ignorespaces {Fitted Values vs Original Series}}}{9}{subfigure.7.1}
+\contentsline {subfigure}{\numberline {(b)}{\ignorespaces {Residuals over Time}}}{9}{subfigure.7.2}
+\contentsline {figure}{\numberline {8}{\ignorespaces Visualizing ARIMA Residuals}}{10}{figure.caption.15}
+\contentsline {subfigure}{\numberline {(a)}{\ignorespaces {QQ Plot of Residuals}}}{10}{subfigure.8.1}
+\contentsline {subfigure}{\numberline {(b)}{\ignorespaces {ACF/PACF of Residuals}}}{10}{subfigure.8.2}
+\contentsline {figure}{\numberline {9}{\ignorespaces Visualizing \texttt {auto.arima} Residuals\relax }}{11}{figure.caption.16}
+\contentsline {subfigure}{\numberline {(a)}{\ignorespaces {QQ Plot of Residuals}}}{11}{subfigure.9.1}
+\contentsline {subfigure}{\numberline {(b)}{\ignorespaces {ACF/PACF of Residuals}}}{11}{subfigure.9.2}
+\contentsline {figure}{\numberline {10}{\ignorespaces Visualizing \texttt {auto.arima} Forecasts\relax }}{12}{figure.caption.18}
+\contentsline {figure}{\numberline {11}{\ignorespaces Visualizing VAR($p$=3, season=\texttt {NULL})}}{13}{figure.caption.22}
+\contentsline {subfigure}{\numberline {(a)}{\ignorespaces {Fitted Values vs Original Series}}}{13}{subfigure.11.1}
+\contentsline {subfigure}{\numberline {(b)}{\ignorespaces {Residuals for Individual Series}}}{13}{subfigure.11.2}
+\contentsline {figure}{\numberline {12}{\ignorespaces Visualizing VAR($p$=2, season=365)}}{14}{figure.caption.23}
+\contentsline {subfigure}{\numberline {(a)}{\ignorespaces {Fitted Values vs Original Series}}}{14}{subfigure.12.1}
+\contentsline {subfigure}{\numberline {(b)}{\ignorespaces {Residuals for Individual Series}}}{14}{subfigure.12.2}
+\contentsline {figure}{\numberline {13}{\ignorespaces ACF/CCF Plots}}{15}{figure.caption.25}
+\contentsline {subfigure}{\numberline {(a)}{\ignorespaces {VAR($p$=3, season=\texttt {NULL})}}}{15}{subfigure.13.1}
+\contentsline {subfigure}{\numberline {(b)}{\ignorespaces {VAR($p$=2, season=365)}}}{15}{subfigure.13.2}
+\contentsline {figure}{\numberline {14}{\ignorespaces Visualizing Forecasting}}{16}{figure.caption.27}
+\contentsline {subfigure}{\numberline {(a)}{\ignorespaces {VAR($p$=3, season=\texttt {NULL})}}}{16}{subfigure.14.1}
+\contentsline {subfigure}{\numberline {(b)}{\ignorespaces {VAR($p$=2, season=365)}}}{16}{subfigure.14.2}
+\contentsline {figure}{\numberline {15}{\ignorespaces Visualizing NNAR Fit}}{17}{figure.caption.31}
+\contentsline {subfigure}{\numberline {(a)}{\ignorespaces {Fitted Values vs Original Series}}}{17}{subfigure.15.1}
+\contentsline {subfigure}{\numberline {(b)}{\ignorespaces {Residuals over Time}}}{17}{subfigure.15.2}
+\contentsline {figure}{\numberline {16}{\ignorespaces Visualizing NNAR Residuals}}{18}{figure.caption.33}
+\contentsline {subfigure}{\numberline {(a)}{\ignorespaces {QQ Plot of Residuals}}}{18}{subfigure.16.1}
+\contentsline {subfigure}{\numberline {(b)}{\ignorespaces {ACF/PACF of Residuals}}}{18}{subfigure.16.2}
+\contentsline {figure}{\numberline {17}{\ignorespaces Visualizing \texttt {NNAR} Forecasts}}{19}{figure.caption.35}
+\contentsline {figure}{\numberline {18}{\ignorespaces Comparing Original Series to Simulated Data}}{20}{figure.caption.36}
+\contentsline {subfigure}{\numberline {(a)}{\ignorespaces {Original Series}}}{20}{subfigure.18.1}
+\contentsline {subfigure}{\numberline {(b)}{\ignorespaces {Simulated Data}}}{20}{subfigure.18.2}
